@@ -7,3 +7,4 @@ passlib[bcrypt]
 alembic
 python-dotenv
 pydantic
+pydantic-settings
