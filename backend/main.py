@@ -8,6 +8,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from core.config import settings  # validates env vars on import
+from routers.auth import router as auth_router
 
 
 # ---------------------------------------------------------------------------
@@ -42,6 +43,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# ---------------------------------------------------------------------------
+# Routers
+# ---------------------------------------------------------------------------
+app.include_router(auth_router)
 
 
 # ---------------------------------------------------------------------------
