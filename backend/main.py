@@ -10,6 +10,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from core.config import settings  # validates env vars on import
 from routers.auth import router as auth_router
 from routers.companies import router as companies_router
+from routers.placement_records import router as placement_records_router
+from routers.rounds import router as rounds_router
 
 
 # ---------------------------------------------------------------------------
@@ -50,6 +52,8 @@ app.add_middleware(
 # ---------------------------------------------------------------------------
 app.include_router(auth_router)
 app.include_router(companies_router)
+app.include_router(placement_records_router)
+app.include_router(rounds_router)
 
 
 # ---------------------------------------------------------------------------

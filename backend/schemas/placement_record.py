@@ -20,7 +20,6 @@ PlacementStatus = Literal["selected", "rejected", "pending"]
 
 class PlacementRecordCreate(BaseModel):
     """Payload for creating a new placement record."""
-    user_id: int
     company_id: int
     academic_year: str
     role_applied: str

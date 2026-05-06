@@ -18,7 +18,7 @@ RoundOutcome = Literal["passed", "failed", "pending"]
 class RoundCreate(BaseModel):
     """Payload for creating a new round."""
     placement_record_id: int
-    round_number: int
+    round_number: Optional[int] = None
     round_type: RoundType
     questions_asked: Optional[str] = None
     outcome: RoundOutcome = "pending"
