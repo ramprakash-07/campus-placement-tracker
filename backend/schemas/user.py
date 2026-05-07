@@ -22,6 +22,17 @@ class UserLogin(BaseModel):
     password: str
 
 
+class UserUpdate(BaseModel):
+    """Payload for updating the current user's profile (email is immutable)."""
+    full_name: str
+
+
+class PasswordUpdate(BaseModel):
+    """Payload for changing the current user's password."""
+    old_password: str
+    new_password: str
+
+
 # ── Response schemas ─────────────────────────────────────────────────────
 
 class UserOut(BaseModel):
