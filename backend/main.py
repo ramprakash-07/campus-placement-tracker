@@ -2,10 +2,13 @@
 Campus Placement Tracker — FastAPI application entry-point.
 """
 
+import os
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from core.config import settings  # validates env vars on import
 from routers.auth import router as auth_router
@@ -40,14 +43,45 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS configuration
+
+# ---------------------------------------------------------------------------
+# CORS middleware — origins driven by FRONTEND_URL env var
+# ---------------------------------------------------------------------------
+_frontend_url = os.getenv("FRONTEND_URL", "http://localhost:5173")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],  # Vite dev server
+    allow_origins=[_frontend_url],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+# ---------------------------------------------------------------------------
+# Global exception handlers
+# ---------------------------------------------------------------------------
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(
+    request: Request, exc: RequestValidationError
+):
+    """Return a clean 422 response for request-validation errors."""
+    return JSONResponse(
+        status_code=422,
+        content={
+            "error": "Validation failed",
+            "details": exc.errors(),
+        },
+    )
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception):
+    """Catch-all for any unhandled server errors — returns a safe 500."""
+    return JSONResponse(
+        status_code=500,
+        content={"error": "Internal server error"},
+    )
+
 
 # ---------------------------------------------------------------------------
 # Routers
@@ -66,10 +100,10 @@ app.include_router(analytics_router)
 @app.get("/")
 def root():
     """Root sanity-check endpoint."""
-    return {"message": "Campus Placement Tracker API is running"}
+    return {"data": {"message": "Campus Placement Tracker API is running"}, "message": "success"}
 
 
 @app.get("/health")
 def health_check():
     """Health-check endpoint for uptime monitors."""
-    return {"status": "ok"}
+    return {"data": {"status": "ok"}, "message": "success"}
