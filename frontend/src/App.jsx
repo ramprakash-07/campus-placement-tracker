@@ -1,19 +1,75 @@
-function App() {
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+
+import BaseLayout from "./components/BaseLayout";
+import Dashboard  from "./pages/Dashboard";
+import Login      from "./pages/Login";
+import Register   from "./pages/Register";
+import Companies  from "./pages/Companies";
+import Records    from "./pages/Records";
+import Profile    from "./pages/Profile";
+import Analytics  from "./pages/Analytics";
+import NotFound   from "./pages/NotFound";
+
+/**
+ * Root component — sets up client-side routing.
+ *
+ * Public routes:  /login, /register
+ * Layout routes:  /, /companies, /records, /profile, /analytics
+ * Fallback:       * → NotFound
+ */
+export default function App() {
   return (
-    <div className="min-h-screen bg-gray-950 flex items-center justify-center">
-      <div className="text-center">
-        <h1 className="text-5xl font-bold text-white mb-4">
-          🎓 Campus Placement Tracker
-        </h1>
-        <p className="text-lg text-gray-400">
-          Full-stack app — Vite + React + Tailwind CSS &amp; FastAPI
-        </p>
-        <div className="mt-8 inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-500 transition-colors">
-          Ready to build 🚀
-        </div>
-      </div>
-    </div>
+    <BrowserRouter>
+      <Routes>
+        {/* ---- Public (no sidebar) ---- */}
+        <Route path="/login"    element={<Login />} />
+        <Route path="/register" element={<Register />} />
+
+        {/* ---- Authenticated (with sidebar layout) ---- */}
+        <Route
+          path="/"
+          element={
+            <BaseLayout>
+              <Dashboard />
+            </BaseLayout>
+          }
+        />
+        <Route
+          path="/companies"
+          element={
+            <BaseLayout>
+              <Companies />
+            </BaseLayout>
+          }
+        />
+        <Route
+          path="/records"
+          element={
+            <BaseLayout>
+              <Records />
+            </BaseLayout>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <BaseLayout>
+              <Profile />
+            </BaseLayout>
+          }
+        />
+        <Route
+          path="/analytics"
+          element={
+            <BaseLayout>
+              <Analytics />
+            </BaseLayout>
+          }
+        />
+
+        {/* ---- Catch-all ---- */}
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
-
-export default App;
