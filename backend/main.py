@@ -27,10 +27,10 @@ async def lifespan(app: FastAPI):
     """Load configuration and perform startup checks."""
     # Config is already validated by the module-level import above.
     # Any additional startup work (e.g. DB migrations, cache warm-up) goes here.
-    print(f"🚀  Starting {settings.ALGORITHM} | DB → {settings.DATABASE_URL[:30]}…")
+    print(f"[START] {settings.ALGORITHM} | DB -> {settings.DATABASE_URL[:30]}...")
     yield
     # Shutdown cleanup (if any) goes here.
-    print("🛑  Shutting down…")
+    print("[STOP] Shutting down...")
 
 
 # ---------------------------------------------------------------------------
