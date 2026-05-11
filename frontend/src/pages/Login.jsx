@@ -1,18 +1,53 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { LogIn } from "lucide-react";
+import { Link, useNavigate, Navigate } from "react-router-dom";
+import { LogIn, Loader2 } from "lucide-react";
+import { useAuth } from "../store/AuthContext";
+import { login as loginApi } from "../services/authService";
+import api from "../services/api";
 
 export default function Login() {
   const navigate = useNavigate();
+  const { login, isAuthenticated, loading: authLoading } = useAuth();
+
   const [form, setForm] = useState({ email: "", password: "" });
+  const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  // If already authenticated, redirect to dashboard
+  if (!authLoading && isAuthenticated) {
+    return <Navigate to="/" replace />;
+  }
 
   const handleChange = (e) =>
     setForm({ ...form, [e.target.name]: e.target.value });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Login logic will be implemented in a later sprint
-    console.log("Login payload:", form);
+    setError("");
+    setSubmitting(true);
+
+    try {
+      // 1. Get token from backend
+      const { access_token } = await loginApi(form);
+
+      // 2. Fetch user profile with the new token
+      localStorage.setItem("access_token", access_token);
+      const { data: user } = await api.get("/users/me");
+
+      // 3. Hydrate auth context
+      await login(access_token, user);
+
+      navigate("/", { replace: true });
+    } catch (err) {
+      const msg =
+        err.response?.data?.detail ||
+        err.response?.data?.message ||
+        "Invalid email or password";
+      setError(msg);
+      localStorage.removeItem("access_token");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -25,6 +60,12 @@ export default function Login() {
             Sign in to your Placement Tracker account
           </p>
         </div>
+
+        {error && (
+          <div className="mb-4 rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+            {error}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -61,10 +102,15 @@ export default function Login() {
 
           <button
             type="submit"
-            className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-700 transition-colors cursor-pointer"
+            disabled={submitting}
+            className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-700 transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            <LogIn size={16} />
-            Sign in
+            {submitting ? (
+              <Loader2 size={16} className="animate-spin" />
+            ) : (
+              <LogIn size={16} />
+            )}
+            {submitting ? "Signing in…" : "Sign in"}
           </button>
         </form>
 

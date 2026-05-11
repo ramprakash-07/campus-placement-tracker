@@ -1,6 +1,7 @@
 import { LayoutDashboard, LogIn, UserPlus, Building2, FileText, User, BarChart3, Menu, X, LogOut } from "lucide-react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useState } from "react";
+import { useAuth } from "../store/AuthContext";
 
 const NAV_ITEMS = [
   { to: "/",          label: "Dashboard",  icon: LayoutDashboard },
@@ -18,9 +19,10 @@ export default function BaseLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+  const { logout } = useAuth();
 
   const handleLogout = () => {
-    localStorage.removeItem("access_token");
+    logout();
     navigate("/login");
   };
 
