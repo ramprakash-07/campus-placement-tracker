@@ -1,14 +1,15 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
-import BaseLayout from "./components/BaseLayout";
-import Dashboard  from "./pages/Dashboard";
-import Login      from "./pages/Login";
-import Register   from "./pages/Register";
-import Companies  from "./pages/Companies";
-import Records    from "./pages/Records";
-import Profile    from "./pages/Profile";
-import Analytics  from "./pages/Analytics";
-import NotFound   from "./pages/NotFound";
+import BaseLayout      from "./components/BaseLayout";
+import ProtectedRoute  from "./components/ProtectedRoute";
+import Dashboard       from "./pages/Dashboard";
+import Login           from "./pages/Login";
+import Register        from "./pages/Register";
+import Companies       from "./pages/Companies";
+import Records         from "./pages/Records";
+import Profile         from "./pages/Profile";
+import Analytics       from "./pages/Analytics";
+import NotFound        from "./pages/NotFound";
 
 /**
  * Root component — sets up client-side routing.
@@ -16,6 +17,10 @@ import NotFound   from "./pages/NotFound";
  * Public routes:  /login, /register
  * Layout routes:  /, /companies, /records, /profile, /analytics
  * Fallback:       * → NotFound
+ *
+ * All non-auth pages are wrapped in <ProtectedRoute> which
+ * redirects to /login when the user is unauthenticated and
+ * shows a loading spinner while the initial auth check runs.
  */
 export default function App() {
   return (
@@ -29,41 +34,51 @@ export default function App() {
         <Route
           path="/"
           element={
-            <BaseLayout>
-              <Dashboard />
-            </BaseLayout>
+            <ProtectedRoute>
+              <BaseLayout>
+                <Dashboard />
+              </BaseLayout>
+            </ProtectedRoute>
           }
         />
         <Route
           path="/companies"
           element={
-            <BaseLayout>
-              <Companies />
-            </BaseLayout>
+            <ProtectedRoute>
+              <BaseLayout>
+                <Companies />
+              </BaseLayout>
+            </ProtectedRoute>
           }
         />
         <Route
           path="/records"
           element={
-            <BaseLayout>
-              <Records />
-            </BaseLayout>
+            <ProtectedRoute>
+              <BaseLayout>
+                <Records />
+              </BaseLayout>
+            </ProtectedRoute>
           }
         />
         <Route
           path="/profile"
           element={
-            <BaseLayout>
-              <Profile />
-            </BaseLayout>
+            <ProtectedRoute>
+              <BaseLayout>
+                <Profile />
+              </BaseLayout>
+            </ProtectedRoute>
           }
         />
         <Route
           path="/analytics"
           element={
-            <BaseLayout>
-              <Analytics />
-            </BaseLayout>
+            <ProtectedRoute>
+              <BaseLayout>
+                <Analytics />
+              </BaseLayout>
+            </ProtectedRoute>
           }
         />
 

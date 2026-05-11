@@ -1,18 +1,60 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { UserPlus } from "lucide-react";
+import { Link, useNavigate, Navigate } from "react-router-dom";
+import { UserPlus, Loader2 } from "lucide-react";
+import { useAuth } from "../store/AuthContext";
+import { register as registerApi } from "../services/authService";
+import { login as loginApi } from "../services/authService";
+import api from "../services/api";
 
 export default function Register() {
   const navigate = useNavigate();
+  const { login, isAuthenticated, loading: authLoading } = useAuth();
+
   const [form, setForm] = useState({ full_name: "", email: "", password: "" });
+  const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  // If already authenticated, redirect to dashboard
+  if (!authLoading && isAuthenticated) {
+    return <Navigate to="/" replace />;
+  }
 
   const handleChange = (e) =>
     setForm({ ...form, [e.target.name]: e.target.value });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Registration logic will be implemented in a later sprint
-    console.log("Register payload:", form);
+    setError("");
+    setSubmitting(true);
+
+    try {
+      // 1. Register the user
+      await registerApi(form);
+
+      // 2. Auto-login after successful registration
+      const { access_token } = await loginApi({
+        email: form.email,
+        password: form.password,
+      });
+
+      // 3. Fetch user profile
+      localStorage.setItem("access_token", access_token);
+      const { data: user } = await api.get("/users/me");
+
+      // 4. Hydrate auth context
+      await login(access_token, user);
+
+      navigate("/", { replace: true });
+    } catch (err) {
+      const msg =
+        err.response?.data?.detail ||
+        err.response?.data?.message ||
+        "Registration failed. Please try again.";
+      setError(msg);
+      localStorage.removeItem("access_token");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -25,6 +67,12 @@ export default function Register() {
             Start tracking your placement journey
           </p>
         </div>
+
+        {error && (
+          <div className="mb-4 rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+            {error}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -77,10 +125,15 @@ export default function Register() {
 
           <button
             type="submit"
-            className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-700 transition-colors cursor-pointer"
+            disabled={submitting}
+            className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-700 transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            <UserPlus size={16} />
-            Create account
+            {submitting ? (
+              <Loader2 size={16} className="animate-spin" />
+            ) : (
+              <UserPlus size={16} />
+            )}
+            {submitting ? "Creating account…" : "Create account"}
           </button>
         </form>
 
