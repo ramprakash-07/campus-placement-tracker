@@ -10,3 +10,17 @@
     @apply font-sans antialiased text-gray-900 bg-gray-50;
   }
 }
+
+/* ------------------------------------------------------------------ */
+/* Custom keyframes                                                    */
+/* ------------------------------------------------------------------ */
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
