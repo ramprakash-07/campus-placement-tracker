@@ -10,10 +10,12 @@
  * • Loading skeleton, empty state, and error handling with retry
  */
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   FileText,
   Plus,
   Trash2,
+  ExternalLink,
   AlertCircle,
   RefreshCw,
   Inbox,
@@ -128,6 +130,7 @@ export default function Records() {
   // Delete state
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleting, setDeleting] = useState(false);
+  const navigate = useNavigate();
 
   // ── Fetch records from API ──────────────────────────────────────────
   const fetchRecords = async () => {
@@ -291,7 +294,8 @@ export default function Records() {
                 {records.map((rec) => (
                   <tr
                     key={rec.id}
-                    className="group hover:bg-primary-50/30 transition-colors"
+                    onClick={() => navigate(`/records/${rec.id}`)}
+                    className="group hover:bg-primary-50/30 transition-colors cursor-pointer"
                   >
                     {/* Company */}
                     <td className="px-5 py-4">
@@ -338,13 +342,28 @@ export default function Records() {
 
                     {/* Actions */}
                     <td className="px-5 py-4">
-                      <button
-                        onClick={() => setDeleteTarget(rec)}
-                        className="p-2 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer opacity-0 group-hover:opacity-100 focus:opacity-100"
-                        aria-label={`Delete record for ${rec.company?.name}`}
-                      >
-                        <Trash2 size={16} />
-                      </button>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/records/${rec.id}`);
+                          }}
+                          className="p-2 rounded-lg text-gray-400 hover:text-primary-600 hover:bg-primary-50 transition-colors cursor-pointer opacity-0 group-hover:opacity-100 focus:opacity-100"
+                          aria-label={`View details for ${rec.company?.name}`}
+                        >
+                          <ExternalLink size={16} />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDeleteTarget(rec);
+                          }}
+                          className="p-2 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer opacity-0 group-hover:opacity-100 focus:opacity-100"
+                          aria-label={`Delete record for ${rec.company?.name}`}
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
