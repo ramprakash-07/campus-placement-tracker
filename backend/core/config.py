@@ -28,6 +28,9 @@ class Settings(BaseSettings):
     # --- CORS ----------------------------------------------------------------
     FRONTEND_URL: str = "http://localhost:5173"
 
+    # --- Coordinator invite code ---------------------------------------------
+    COORDINATOR_INVITE_CODE: str = ""
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

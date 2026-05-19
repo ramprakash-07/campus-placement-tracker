@@ -3,8 +3,11 @@ User schemas — request / response shapes for User endpoints.
 """
 
 from datetime import datetime
+from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, EmailStr
+
+from models.user import UserRole
 
 
 # ── Request schemas ──────────────────────────────────────────────────────
@@ -14,6 +17,8 @@ class UserCreate(BaseModel):
     email: EmailStr
     password: str
     full_name: str
+    role: UserRole = UserRole.STUDENT
+    invite_code: Optional[str] = None
 
 
 class UserLogin(BaseModel):
@@ -40,6 +45,7 @@ class UserOut(BaseModel):
     id: int
     email: EmailStr
     full_name: str
+    role: str
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
