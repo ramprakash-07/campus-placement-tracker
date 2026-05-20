@@ -1,5 +1,10 @@
 """
 Analytics router — aggregate placement statistics and company frequency data.
+
+All endpoints are accessible by any authenticated user. The query scope depends
+on the user's role:
+  - **coordinator** → platform-wide data (no user_id filter)
+  - **student**     → personal data only (WHERE user_id = current_user.id)
 """
 
 from fastapi import APIRouter, Depends
@@ -11,9 +16,16 @@ from db.database import get_db
 from models.company import Company
 from models.placement_record import PlacementRecord
 from models.round import Round
-from models.user import User
+from models.user import User, UserRole
 
 router = APIRouter(prefix="/analytics", tags=["Analytics"])
+
+
+# ---------------------------------------------------------------------------
+# Helper — check if user is a coordinator
+# ---------------------------------------------------------------------------
+def _is_coordinator(user: User) -> bool:
+    return user.role == UserRole.COORDINATOR
 
 
 # ---------------------------------------------------------------------------
@@ -25,39 +37,33 @@ def get_summary(
     current_user: User = Depends(get_current_user),
 ):
     """
-    Summary stats for the current user:
+    Summary stats scoped by role.
 
-    - **total_companies**: distinct companies applied to
-    - **total_rounds**: total interview rounds attended
-    - **selection_rate**: percentage of applications with status ``selected``
+    - **coordinator** → platform-wide totals (scope: "platform")
+    - **student** → personal totals (scope: "personal")
     """
-    total_records = (
-        db.query(func.count(PlacementRecord.id))
-        .filter(PlacementRecord.user_id == current_user.id)
-        .scalar()
-    ) or 0
+    is_coord = _is_coordinator(current_user)
 
-    total_companies = (
-        db.query(func.count(func.distinct(PlacementRecord.company_id)))
-        .filter(PlacementRecord.user_id == current_user.id)
-        .scalar()
-    ) or 0
-
-    total_rounds = (
+    records_query = db.query(func.count(PlacementRecord.id))
+    companies_query = db.query(func.count(func.distinct(PlacementRecord.company_id)))
+    rounds_query = (
         db.query(func.count(Round.id))
         .join(PlacementRecord, Round.placement_record_id == PlacementRecord.id)
-        .filter(PlacementRecord.user_id == current_user.id)
-        .scalar()
-    ) or 0
+    )
+    selected_query = db.query(func.count(PlacementRecord.id)).filter(
+        PlacementRecord.status == "selected",
+    )
 
-    selected_count = (
-        db.query(func.count(PlacementRecord.id))
-        .filter(
-            PlacementRecord.user_id == current_user.id,
-            PlacementRecord.status == "selected",
-        )
-        .scalar()
-    ) or 0
+    if not is_coord:
+        records_query = records_query.filter(PlacementRecord.user_id == current_user.id)
+        companies_query = companies_query.filter(PlacementRecord.user_id == current_user.id)
+        rounds_query = rounds_query.filter(PlacementRecord.user_id == current_user.id)
+        selected_query = selected_query.filter(PlacementRecord.user_id == current_user.id)
+
+    total_records = records_query.scalar() or 0
+    total_companies = companies_query.scalar() or 0
+    total_rounds = rounds_query.scalar() or 0
+    selected_count = selected_query.scalar() or 0
 
     selection_rate = round((selected_count / total_records) * 100, 2) if total_records else 0.0
 
@@ -65,6 +71,7 @@ def get_summary(
         "total_companies": total_companies,
         "total_rounds": total_rounds,
         "selection_rate": selection_rate,
+        "scope": "platform" if is_coord else "personal",
     }
 
 
@@ -77,12 +84,14 @@ def get_packages(
     current_user: User = Depends(get_current_user),
 ):
     """
-    CTC package statistics for the current user's *selected* records,
-    grouped by company.
+    CTC package statistics grouped by company.
 
-    Returns average, minimum, and maximum ``ctc_offered`` per company.
+    - **coordinator** → all selected records platform-wide
+    - **student** → only the current user's selected records
     """
-    rows = (
+    is_coord = _is_coordinator(current_user)
+
+    query = (
         db.query(
             Company.name.label("company"),
             func.avg(PlacementRecord.ctc_offered).label("avg_ctc"),
@@ -91,13 +100,15 @@ def get_packages(
         )
         .join(PlacementRecord, PlacementRecord.company_id == Company.id)
         .filter(
-            PlacementRecord.user_id == current_user.id,
             PlacementRecord.status == "selected",
             PlacementRecord.ctc_offered.isnot(None),
         )
-        .group_by(Company.name)
-        .all()
     )
+
+    if not is_coord:
+        query = query.filter(PlacementRecord.user_id == current_user.id)
+
+    rows = query.group_by(Company.name).all()
 
     return [
         {
@@ -116,17 +127,29 @@ def get_packages(
 @router.get("/company-frequency")
 def get_company_frequency(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),  # auth guard only
+    current_user: User = Depends(get_current_user),
 ):
     """
-    Count of placement records per company across **all users** (anonymized).
+    Count of placement records per company.
+
+    - **coordinator** → all users' records
+    - **student** → only the current user's records
     """
-    rows = (
+    is_coord = _is_coordinator(current_user)
+
+    query = (
         db.query(
             Company.name.label("company"),
             func.count(PlacementRecord.id).label("record_count"),
         )
         .join(PlacementRecord, PlacementRecord.company_id == Company.id)
+    )
+
+    if not is_coord:
+        query = query.filter(PlacementRecord.user_id == current_user.id)
+
+    rows = (
+        query
         .group_by(Company.name)
         .order_by(func.count(PlacementRecord.id).desc())
         .all()
@@ -144,18 +167,29 @@ def get_company_frequency(
 @router.get("/top-companies")
 def get_top_companies(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),  # auth guard only
+    current_user: User = Depends(get_current_user),
 ):
     """
-    Top 10 companies by visit frequency (number of placement records across
-    all users).
+    Top 10 companies by visit frequency.
+
+    - **coordinator** → across all users
+    - **student** → only the current user's records
     """
-    rows = (
+    is_coord = _is_coordinator(current_user)
+
+    query = (
         db.query(
             Company.name.label("company"),
             func.count(PlacementRecord.id).label("visit_count"),
         )
         .join(PlacementRecord, PlacementRecord.company_id == Company.id)
+    )
+
+    if not is_coord:
+        query = query.filter(PlacementRecord.user_id == current_user.id)
+
+    rows = (
+        query
         .group_by(Company.name)
         .order_by(func.count(PlacementRecord.id).desc())
         .limit(10)
@@ -210,16 +244,18 @@ def _build_dropout_stats(db: Session, user_id: int | None = None):
 @router.get("/dropout-rates")
 def get_dropout_rates(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),  # auth guard only
+    current_user: User = Depends(get_current_user),
 ):
     """
-    Global round-wise dropout / failure rates across **all** users.
+    Round-wise dropout / failure rates.
 
-    Returns for each ``round_type`` (aptitude, technical, hr,
-    group_discussion, coding) the total occurrences and the percentage
-    whose outcome was ``failed``.
+    - **coordinator** → platform-wide across all users
+    - **student** → scoped to the current user's records
     """
-    return _build_dropout_stats(db)
+    if _is_coordinator(current_user):
+        return _build_dropout_stats(db)
+    else:
+        return _build_dropout_stats(db, user_id=current_user.id)
 
 
 # ---------------------------------------------------------------------------
@@ -231,9 +267,12 @@ def get_my_round_performance(
     current_user: User = Depends(get_current_user),
 ):
     """
-    Round-wise dropout / failure rates scoped to the **current user** only.
+    Round-wise dropout / failure rates.
 
-    Same shape as ``/dropout-rates`` but filtered to the authenticated
-    user's placement records.
+    - **coordinator** → platform-wide (same as dropout-rates for coordinators)
+    - **student** → scoped to the current user's placement records
     """
-    return _build_dropout_stats(db, user_id=current_user.id)
+    if _is_coordinator(current_user):
+        return _build_dropout_stats(db)
+    else:
+        return _build_dropout_stats(db, user_id=current_user.id)

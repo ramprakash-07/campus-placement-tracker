@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from core.security import decode_access_token
 from db.database import get_db
-from models.user import User
+from models.user import User, UserRole
 
 # Bearer-token extraction scheme
 _bearer_scheme = HTTPBearer()
@@ -51,3 +51,25 @@ def get_current_user(
         raise credentials_exception
 
     return user
+
+
+def get_current_coordinator(
+    current_user: User = Depends(get_current_user),
+) -> User:
+    """
+    FastAPI dependency that ensures the current user has the **coordinator** role.
+
+    Reuses :func:`get_current_user` for JWT validation — does NOT duplicate
+    any token logic.
+
+    Raises
+    ------
+    HTTPException 403
+        If the authenticated user is not a coordinator.
+    """
+    if current_user.role != UserRole.COORDINATOR:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Coordinator access required",
+        )
+    return current_user

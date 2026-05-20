@@ -26,6 +26,20 @@ def get_me(current_user: User = Depends(get_current_user)):
 
 
 # ---------------------------------------------------------------------------
+# GET /users/me/role — return current user's role (for frontend role checks)
+# ---------------------------------------------------------------------------
+@router.get("/me/role")
+def get_my_role(current_user: User = Depends(get_current_user)):
+    """
+    Return the authenticated user's role.
+
+    Used by the frontend to determine UI behaviour after login.
+    No coordinator guard — any authenticated user can check their own role.
+    """
+    return {"role": current_user.role.value}
+
+
+# ---------------------------------------------------------------------------
 # PUT /users/me — update current user's full_name (email is immutable)
 # ---------------------------------------------------------------------------
 @router.put("/me", response_model=UserOut)
