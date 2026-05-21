@@ -13,7 +13,7 @@ from schemas.round import RoundOut
 
 
 # Re-use the same allowed status values defined in the ORM model.
-PlacementStatus = Literal["selected", "rejected", "pending"]
+PlacementStatus = Literal["selected", "rejected", "pending", "coordinator_approved", "coordinator_rejected"]
 
 
 # ── Request schemas ──────────────────────────────────────────────────────

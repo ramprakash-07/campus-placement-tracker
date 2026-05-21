@@ -1,16 +1,17 @@
 /**
  * AuthContext — centralised authentication state via React Context + useReducer.
  *
- * State shape : { user, token, isAuthenticated, loading }
+ * State shape : { user, token, role, isAuthenticated, loading }
  * Actions     : LOGIN, LOGOUT, SET_LOADING
  *
  * On first mount the provider reads `access_token` from localStorage and
- * validates it by calling GET /users/me.  If the token is valid the user
- * object is hydrated; otherwise both token and user are cleared.
+ * validates it by calling GET /users/me and GET /users/me/role.  If the
+ * token is valid the user object and role are hydrated; otherwise both
+ * token and user are cleared.
  *
  * Usage:
  *   import { useAuth } from "../store/AuthContext";
- *   const { user, login, logout, isAuthenticated, loading } = useAuth();
+ *   const { user, role, login, logout, isAuthenticated, loading } = useAuth();
  */
 import {
   createContext,
@@ -28,6 +29,7 @@ const AuthContext = createContext(null);
 const initialState = {
   user: null,
   token: localStorage.getItem("access_token") || null,
+  role: null,
   isAuthenticated: false,
   loading: true, // true until the initial validation finishes
 };
@@ -39,6 +41,7 @@ function authReducer(state, action) {
         ...state,
         user: action.payload.user,
         token: action.payload.token,
+        role: action.payload.role || null,
         isAuthenticated: true,
         loading: false,
       };
@@ -48,6 +51,7 @@ function authReducer(state, action) {
         ...state,
         user: null,
         token: null,
+        role: null,
         isAuthenticated: false,
         loading: false,
       };
@@ -75,10 +79,17 @@ export function AuthProvider({ children }) {
       }
 
       try {
-        const { data } = await api.get("/users/me");
+        const [userRes, roleRes] = await Promise.all([
+          api.get("/users/me"),
+          api.get("/users/me/role"),
+        ]);
         dispatch({
           type: "LOGIN",
-          payload: { user: data, token: storedToken },
+          payload: {
+            user: userRes.data,
+            token: storedToken,
+            role: roleRes.data.role,
+          },
         });
       } catch {
         // Token expired or invalid — clear everything
@@ -93,7 +104,20 @@ export function AuthProvider({ children }) {
   // ---- Action helpers exposed to consumers ---------------------------------
   const login = useCallback(async (token, user) => {
     localStorage.setItem("access_token", token);
-    dispatch({ type: "LOGIN", payload: { user, token } });
+    // Fetch the role after setting the token
+    try {
+      const { data } = await api.get("/users/me/role");
+      dispatch({
+        type: "LOGIN",
+        payload: { user, token, role: data.role },
+      });
+    } catch {
+      // Fallback: login without role
+      dispatch({
+        type: "LOGIN",
+        payload: { user, token, role: user?.role || null },
+      });
+    }
   }, []);
 
   const logout = useCallback(() => {

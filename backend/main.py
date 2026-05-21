@@ -17,6 +17,7 @@ from routers.companies import router as companies_router
 from routers.placement_records import router as placement_records_router
 from routers.rounds import router as rounds_router
 from routers.users import router as users_router
+from routers.coordinator import router as coordinator_router
 
 
 # ---------------------------------------------------------------------------
@@ -92,6 +93,7 @@ app.include_router(companies_router)
 app.include_router(placement_records_router)
 app.include_router(rounds_router)
 app.include_router(analytics_router)
+app.include_router(coordinator_router)
 
 
 # ---------------------------------------------------------------------------

@@ -10,7 +10,7 @@ from sqlalchemy.orm import relationship
 from db.database import Base
 
 # Allowed status values for a placement application.
-PLACEMENT_STATUS = ("selected", "rejected", "pending")
+PLACEMENT_STATUS = ("selected", "rejected", "pending", "coordinator_approved", "coordinator_rejected")
 
 
 class PlacementRecord(Base):
