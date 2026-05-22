@@ -5,6 +5,7 @@
  *  • Logo ("CPT") with branding gradient
  *  • Nav links with lucide-react icons for Dashboard, Companies,
  *    My Records, Analytics, Profile
+ *  • Coordinator-only section with "Coordinator Dashboard" and "Students"
  *  • Active route highlighting via react-router-dom useLocation
  *  • Collapses to icon-only on mobile; toggle button expands it
  *  • Smooth slide-in/out animation with backdrop overlay on mobile
@@ -15,10 +16,12 @@ import {
   FileText,
   BarChart3,
   User,
+  Users,
   ChevronsLeft,
   ChevronsRight,
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
+import { useAuth } from "../../store/AuthContext";
 
 const NAV_ITEMS = [
   { to: "/",          label: "Dashboard",   icon: LayoutDashboard },
@@ -28,8 +31,44 @@ const NAV_ITEMS = [
   { to: "/profile",   label: "Profile",     icon: User },
 ];
 
+const COORDINATOR_NAV_ITEMS = [
+  { to: "/coordinator/dashboard", label: "Coordinator Dashboard", icon: LayoutDashboard },
+  { to: "/coordinator/students",  label: "Students",              icon: Users },
+];
+
+function NavItem({ to, label, icon: Icon, collapsed, isActive, onClick }) {
+  return (
+    <NavLink
+      to={to}
+      onClick={onClick}
+      title={collapsed ? label : undefined}
+      className={`
+        group relative flex items-center gap-3 rounded-lg text-sm font-medium
+        transition-all duration-200
+        ${collapsed ? "justify-center px-2 py-3" : "px-3 py-2.5"}
+        ${
+          isActive
+            ? "bg-primary-600/20 text-primary-400 shadow-sm"
+            : "text-gray-400 hover:bg-gray-800/60 hover:text-gray-100"
+        }
+      `}
+    >
+      {/* Active indicator bar */}
+      {isActive && (
+        <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full bg-primary-500" />
+      )}
+      <Icon size={20} className="flex-shrink-0" />
+      {!collapsed && <span>{label}</span>}
+    </NavLink>
+  );
+}
+
 export default function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose }) {
   const location = useLocation();
+  const { role } = useAuth();
+
+  const isActivePath = (to) =>
+    to === "/" ? location.pathname === "/" : location.pathname.startsWith(to);
 
   return (
     <>
@@ -73,38 +112,47 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose
 
         {/* ── Navigation Links ──────────────────────────────────────── */}
         <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
-          {NAV_ITEMS.map(({ to, label, icon: Icon }) => {
-            const isActive =
-              to === "/"
-                ? location.pathname === "/"
-                : location.pathname.startsWith(to);
+          {NAV_ITEMS.map(({ to, label, icon }) => (
+            <NavItem
+              key={to}
+              to={to}
+              label={label}
+              icon={icon}
+              collapsed={collapsed}
+              isActive={isActivePath(to)}
+              onClick={onMobileClose}
+            />
+          ))}
 
-            return (
-              <NavLink
-                key={to}
-                to={to}
-                onClick={onMobileClose}
-                title={collapsed ? label : undefined}
-                className={`
-                  group relative flex items-center gap-3 rounded-lg text-sm font-medium
-                  transition-all duration-200
-                  ${collapsed ? "justify-center px-2 py-3" : "px-3 py-2.5"}
-                  ${
-                    isActive
-                      ? "bg-primary-600/20 text-primary-400 shadow-sm"
-                      : "text-gray-400 hover:bg-gray-800/60 hover:text-gray-100"
-                  }
-                `}
-              >
-                {/* Active indicator bar */}
-                {isActive && (
-                  <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full bg-primary-500" />
-                )}
-                <Icon size={20} className="flex-shrink-0" />
-                {!collapsed && <span>{label}</span>}
-              </NavLink>
-            );
-          })}
+          {/* ── Coordinator Section ──────────────────────────────────── */}
+          {role === "coordinator" && (
+            <>
+              {/* Separator */}
+              <div className="pt-4 pb-2">
+                <div className="flex items-center gap-2 px-1">
+                  <hr className="flex-1 border-gray-700/60" />
+                  {!collapsed && (
+                    <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest whitespace-nowrap">
+                      Coordinator
+                    </span>
+                  )}
+                  <hr className="flex-1 border-gray-700/60" />
+                </div>
+              </div>
+
+              {COORDINATOR_NAV_ITEMS.map(({ to, label, icon }) => (
+                <NavItem
+                  key={to}
+                  to={to}
+                  label={label}
+                  icon={icon}
+                  collapsed={collapsed}
+                  isActive={isActivePath(to)}
+                  onClick={onMobileClose}
+                />
+              ))}
+            </>
+          )}
         </nav>
 
         {/* ── Collapse toggle (desktop only) ────────────────────────── */}
