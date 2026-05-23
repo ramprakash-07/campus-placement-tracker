@@ -5,9 +5,14 @@ All endpoints are accessible by any authenticated user. The query scope depends
 on the user's role:
   - **coordinator** → platform-wide data (no user_id filter)
   - **student**     → personal data only (WHERE user_id = current_user.id)
+
+All endpoints accept an optional ``academic_year`` query parameter to filter
+placement records by academic year before aggregation.
 """
 
-from fastapi import APIRouter, Depends
+from typing import Optional
+
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
@@ -29,10 +34,23 @@ def _is_coordinator(user: User) -> bool:
 
 
 # ---------------------------------------------------------------------------
+# Helper — apply common filters (role scope + academic year)
+# ---------------------------------------------------------------------------
+def _apply_filters(query, user: User, academic_year: str | None = None):
+    """Apply user-scope and academic_year filters to a query on PlacementRecord."""
+    if not _is_coordinator(user):
+        query = query.filter(PlacementRecord.user_id == user.id)
+    if academic_year:
+        query = query.filter(PlacementRecord.academic_year == academic_year)
+    return query
+
+
+# ---------------------------------------------------------------------------
 # GET /analytics/summary
 # ---------------------------------------------------------------------------
 @router.get("/summary")
 def get_summary(
+    academic_year: Optional[str] = Query(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -54,11 +72,10 @@ def get_summary(
         PlacementRecord.status == "selected",
     )
 
-    if not is_coord:
-        records_query = records_query.filter(PlacementRecord.user_id == current_user.id)
-        companies_query = companies_query.filter(PlacementRecord.user_id == current_user.id)
-        rounds_query = rounds_query.filter(PlacementRecord.user_id == current_user.id)
-        selected_query = selected_query.filter(PlacementRecord.user_id == current_user.id)
+    records_query = _apply_filters(records_query, current_user, academic_year)
+    companies_query = _apply_filters(companies_query, current_user, academic_year)
+    rounds_query = _apply_filters(rounds_query, current_user, academic_year)
+    selected_query = _apply_filters(selected_query, current_user, academic_year)
 
     total_records = records_query.scalar() or 0
     total_companies = companies_query.scalar() or 0
@@ -80,6 +97,7 @@ def get_summary(
 # ---------------------------------------------------------------------------
 @router.get("/packages")
 def get_packages(
+    academic_year: Optional[str] = Query(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -89,8 +107,6 @@ def get_packages(
     - **coordinator** → all selected records platform-wide
     - **student** → only the current user's selected records
     """
-    is_coord = _is_coordinator(current_user)
-
     query = (
         db.query(
             Company.name.label("company"),
@@ -105,9 +121,7 @@ def get_packages(
         )
     )
 
-    if not is_coord:
-        query = query.filter(PlacementRecord.user_id == current_user.id)
-
+    query = _apply_filters(query, current_user, academic_year)
     rows = query.group_by(Company.name).all()
 
     return [
@@ -126,6 +140,7 @@ def get_packages(
 # ---------------------------------------------------------------------------
 @router.get("/company-frequency")
 def get_company_frequency(
+    academic_year: Optional[str] = Query(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -135,8 +150,6 @@ def get_company_frequency(
     - **coordinator** → all users' records
     - **student** → only the current user's records
     """
-    is_coord = _is_coordinator(current_user)
-
     query = (
         db.query(
             Company.name.label("company"),
@@ -145,8 +158,7 @@ def get_company_frequency(
         .join(PlacementRecord, PlacementRecord.company_id == Company.id)
     )
 
-    if not is_coord:
-        query = query.filter(PlacementRecord.user_id == current_user.id)
+    query = _apply_filters(query, current_user, academic_year)
 
     rows = (
         query
@@ -166,6 +178,7 @@ def get_company_frequency(
 # ---------------------------------------------------------------------------
 @router.get("/top-companies")
 def get_top_companies(
+    academic_year: Optional[str] = Query(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -175,8 +188,6 @@ def get_top_companies(
     - **coordinator** → across all users
     - **student** → only the current user's records
     """
-    is_coord = _is_coordinator(current_user)
-
     query = (
         db.query(
             Company.name.label("company"),
@@ -185,8 +196,7 @@ def get_top_companies(
         .join(PlacementRecord, PlacementRecord.company_id == Company.id)
     )
 
-    if not is_coord:
-        query = query.filter(PlacementRecord.user_id == current_user.id)
+    query = _apply_filters(query, current_user, academic_year)
 
     rows = (
         query
@@ -205,7 +215,11 @@ def get_top_companies(
 # ---------------------------------------------------------------------------
 # Helper — build dropout-rate breakdown from a base query filter
 # ---------------------------------------------------------------------------
-def _build_dropout_stats(db: Session, user_id: int | None = None):
+def _build_dropout_stats(
+    db: Session,
+    user_id: int | None = None,
+    academic_year: str | None = None,
+):
     """
     Return per-round-type dropout statistics.
 
@@ -222,6 +236,9 @@ def _build_dropout_stats(db: Session, user_id: int | None = None):
 
     if user_id is not None:
         base = base.filter(PlacementRecord.user_id == user_id)
+
+    if academic_year:
+        base = base.filter(PlacementRecord.academic_year == academic_year)
 
     rows = base.group_by(Round.round_type).all()
 
@@ -243,6 +260,7 @@ def _build_dropout_stats(db: Session, user_id: int | None = None):
 # ---------------------------------------------------------------------------
 @router.get("/dropout-rates")
 def get_dropout_rates(
+    academic_year: Optional[str] = Query(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -253,9 +271,9 @@ def get_dropout_rates(
     - **student** → scoped to the current user's records
     """
     if _is_coordinator(current_user):
-        return _build_dropout_stats(db)
+        return _build_dropout_stats(db, academic_year=academic_year)
     else:
-        return _build_dropout_stats(db, user_id=current_user.id)
+        return _build_dropout_stats(db, user_id=current_user.id, academic_year=academic_year)
 
 
 # ---------------------------------------------------------------------------
@@ -263,6 +281,7 @@ def get_dropout_rates(
 # ---------------------------------------------------------------------------
 @router.get("/my-round-performance")
 def get_my_round_performance(
+    academic_year: Optional[str] = Query(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -273,6 +292,6 @@ def get_my_round_performance(
     - **student** → scoped to the current user's placement records
     """
     if _is_coordinator(current_user):
-        return _build_dropout_stats(db)
+        return _build_dropout_stats(db, academic_year=academic_year)
     else:
-        return _build_dropout_stats(db, user_id=current_user.id)
+        return _build_dropout_stats(db, user_id=current_user.id, academic_year=academic_year)

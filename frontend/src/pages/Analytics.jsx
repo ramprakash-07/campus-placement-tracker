@@ -9,9 +9,10 @@
  *
  * Each section fetches data independently with its own loading state.
  */
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   BarChart3,
+  Filter,
   Building2,
   Layers,
   TrendingUp,
@@ -87,6 +88,8 @@ const ROUND_TYPE_LABELS = {
   group_discussion: "Group Discussion",
   coding: "Coding",
 };
+
+const ACADEMIC_YEARS = ["All", "2022-23", "2023-24", "2024-25"];
 
 /* ── Skeleton loaders ────────────────────────────────────────────────── */
 function CardSkeleton() {
@@ -273,6 +276,9 @@ function CustomPieLegend({ payload }) {
 /* ── MAIN COMPONENT ──────────────────────────────────────────────────── */
 /* ═══════════════════════════════════════════════════════════════════════ */
 export default function Analytics() {
+  // ── Filter state ────────────────────────────────────────────────────
+  const [selectedYear, setSelectedYear] = useState("All");
+
   // ── Section 1: Summary ──────────────────────────────────────────────
   const [summary, setSummary] = useState(null);
   const [summaryLoading, setSummaryLoading] = useState(true);
@@ -293,27 +299,35 @@ export default function Analytics() {
   const [performance, setPerformance] = useState([]);
   const [perfLoading, setPerfLoading] = useState(true);
 
+  // ── Derive the year param (null if "All") ───────────────────────────
+  const yearParam = selectedYear === "All" ? null : selectedYear;
+
   // ── Fetch all data independently ────────────────────────────────────
-  useEffect(() => {
-    getSummary()
+  const fetchAll = useCallback(() => {
+    setSummaryLoading(true);
+    setPackagesLoading(true);
+    setTopLoading(true);
+    setDropoutLoading(true);
+    setPerfLoading(true);
+
+    getSummary(yearParam)
       .then(setSummary)
       .catch(() => {})
       .finally(() => setSummaryLoading(false));
 
-    getPackages()
+    getPackages(yearParam)
       .then(setPackages)
       .catch(() => {})
       .finally(() => setPackagesLoading(false));
 
-    getTopCompanies()
+    getTopCompanies(yearParam)
       .then((data) => {
-        // sort descending by visit_count
         setTopCompanies(data.sort((a, b) => b.visit_count - a.visit_count));
       })
       .catch(() => {})
       .finally(() => setTopLoading(false));
 
-    getDropoutRates()
+    getDropoutRates(yearParam)
       .then((data) =>
         setDropout(
           data.map((d) => ({
@@ -325,12 +339,10 @@ export default function Analytics() {
       .catch(() => {})
       .finally(() => setDropoutLoading(false));
 
-    getMyRoundPerformance()
+    getMyRoundPerformance(yearParam)
       .then((data) => {
-        // Aggregate into passed/failed/pending counts
         let passed = 0;
         let failed = 0;
-        let pending = 0;
         data.forEach((d) => {
           passed += d.total - d.failed;
           failed += d.failed;
@@ -342,7 +354,11 @@ export default function Analytics() {
       })
       .catch(() => {})
       .finally(() => setPerfLoading(false));
-  }, []);
+  }, [yearParam]);
+
+  useEffect(() => {
+    fetchAll();
+  }, [fetchAll]);
 
   return (
     <div className="space-y-6">
@@ -356,6 +372,29 @@ export default function Analytics() {
           <p className="text-sm text-gray-500">
             Track your placement performance and campus trends
           </p>
+        </div>
+      </div>
+
+      {/* ── Academic Year Filter Bar ──────────────────────────────────── */}
+      <div className="flex items-center gap-3 px-4 py-3 rounded-2xl border border-gray-200/60 bg-white shadow-sm">
+        <div className="flex items-center gap-2 text-sm font-medium text-gray-600">
+          <Filter size={16} className="text-gray-400" />
+          <span>Filter by Year</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          {ACADEMIC_YEARS.map((year) => (
+            <button
+              key={year}
+              onClick={() => setSelectedYear(year)}
+              className={`px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all cursor-pointer ${
+                selectedYear === year
+                  ? "bg-primary-600 text-white shadow-md shadow-primary-500/20"
+                  : "text-gray-600 bg-gray-50 hover:bg-gray-100"
+              }`}
+            >
+              {year}
+            </button>
+          ))}
         </div>
       </div>
 
