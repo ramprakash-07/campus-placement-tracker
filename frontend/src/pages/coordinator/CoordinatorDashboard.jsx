@@ -16,7 +16,6 @@ import {
   CheckCircle2,
   XCircle,
   Loader2,
-  Inbox,
   AlertCircle,
   RefreshCw,
   X,
@@ -25,6 +24,8 @@ import { getStudents, updateRecordStatus } from "../../services/coordinatorServi
 import { getSummary, getPackages } from "../../services/analyticsService";
 import { getRecords } from "../../services/recordService";
 import Toast from "../../components/Toast";
+import SkeletonRow from "../../components/ui/SkeletonRow";
+import EmptyState from "../../components/ui/EmptyState";
 
 /* ── Status badge styles ─────────────────────────────────────────────── */
 const STATUS_STYLES = {
@@ -103,18 +104,7 @@ function StatCard({ icon: Icon, label, value, color, loading }) {
   );
 }
 
-/* ── Skeleton row ────────────────────────────────────────────────────── */
-function SkeletonRow({ cols = 7 }) {
-  return (
-    <tr className="animate-pulse">
-      {Array.from({ length: cols }).map((_, i) => (
-        <td key={i} className="px-5 py-4">
-          <div className="h-4 w-20 rounded-lg bg-gray-200" />
-        </td>
-      ))}
-    </tr>
-  );
-}
+
 
 /* ── Main component ──────────────────────────────────────────────────── */
 export default function CoordinatorDashboard() {
@@ -412,17 +402,13 @@ export default function CoordinatorDashboard() {
 
         {/* Empty */}
         {!recordsLoading && !error && records.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-gray-100 mb-4">
-              <Inbox size={28} className="text-gray-400" />
-            </div>
-            <h3 className="text-lg font-semibold text-gray-800">
-              No placement records yet
-            </h3>
-            <p className="mt-1 text-sm text-gray-500 max-w-xs">
-              Students haven't added any placement records to the platform.
-            </p>
-          </div>
+          <EmptyState
+            icon={FileText}
+            title="No placement records yet"
+            description="Students haven't added any placement records to the platform."
+            iconBg="bg-primary-50"
+            iconColor="text-primary-400"
+          />
         )}
 
         {/* Table */}

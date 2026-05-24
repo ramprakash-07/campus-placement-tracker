@@ -18,13 +18,14 @@ import {
   ExternalLink,
   AlertCircle,
   RefreshCw,
-  Inbox,
   AlertTriangle,
   X,
   Loader2,
 } from "lucide-react";
 import { getRecords, deleteRecord } from "../services/recordService";
 import AddRecordModal from "../components/AddRecordModal";
+import SkeletonRow from "../components/ui/SkeletonRow";
+import EmptyState from "../components/ui/EmptyState";
 
 /* ── Status badge styles ─────────────────────────────────────────────── */
 const STATUS_STYLES = {
@@ -55,20 +56,8 @@ function StatusBadge({ status }) {
   );
 }
 
-/* ── Skeleton table row for loading state ────────────────────────────── */
-function SkeletonRow() {
-  return (
-    <tr className="animate-pulse">
-      <td className="px-5 py-4"><div className="h-4 w-28 rounded-lg bg-gray-200" /></td>
-      <td className="px-5 py-4"><div className="h-4 w-24 rounded-lg bg-gray-200" /></td>
-      <td className="px-5 py-4"><div className="h-4 w-16 rounded-lg bg-gray-200" /></td>
-      <td className="px-5 py-4"><div className="h-4 w-14 rounded-lg bg-gray-200" /></td>
-      <td className="px-5 py-4"><div className="h-5 w-20 rounded-full bg-gray-200" /></td>
-      <td className="px-5 py-4"><div className="h-4 w-8 rounded-lg bg-gray-200" /></td>
-      <td className="px-5 py-4"><div className="h-8 w-8 rounded-lg bg-gray-200" /></td>
-    </tr>
-  );
-}
+/* ── Table column widths for skeleton ──────────────────────────────── */
+const RECORD_SKELETON_WIDTHS = ["w-28", "w-24", "w-16", "w-14", "w-20", "w-8", "w-8"];
 
 /* ── Delete confirmation dialog ──────────────────────────────────────── */
 function DeleteDialog({ record, onConfirm, onCancel, deleting }) {
@@ -241,7 +230,7 @@ export default function Records() {
               </thead>
               <tbody className="divide-y divide-gray-50">
                 {Array.from({ length: 4 }).map((_, i) => (
-                  <SkeletonRow key={i} />
+                  <SkeletonRow key={i} widths={RECORD_SKELETON_WIDTHS} />
                 ))}
               </tbody>
             </table>
@@ -251,24 +240,15 @@ export default function Records() {
 
       {/* ── Empty state ──────────────────────────────────────────────── */}
       {!loading && !error && records.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-16 text-center">
-          <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-gray-100 mb-4">
-            <Inbox size={28} className="text-gray-400" />
-          </div>
-          <h3 className="text-lg font-semibold text-gray-800">
-            No placement records yet
-          </h3>
-          <p className="mt-1 text-sm text-gray-500 max-w-xs">
-            Start tracking your placement journey by adding your first record.
-          </p>
-          <button
-            onClick={() => setModalOpen(true)}
-            className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-primary-700 bg-primary-50 hover:bg-primary-100 transition-colors cursor-pointer"
-          >
-            <Plus size={16} />
-            Add Record
-          </button>
-        </div>
+        <EmptyState
+          icon={FileText}
+          title="No placement records yet"
+          description="Start tracking your placement journey by adding your first record."
+          iconBg="bg-primary-50"
+          iconColor="text-primary-400"
+          actionLabel="Add Record"
+          onAction={() => setModalOpen(true)}
+        />
       )}
 
       {/* ── Records table ────────────────────────────────────────────── */}

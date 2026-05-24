@@ -24,12 +24,13 @@ import {
   RefreshCw,
   Loader2,
   Layers,
-  Inbox,
 } from "lucide-react";
 import { getRecord } from "../services/recordService";
 import { getRounds, updateRound, deleteRound } from "../services/roundService";
 import RoundTimeline from "../components/RoundTimeline";
 import AddRoundModal from "../components/AddRoundModal";
+import EmptyState from "../components/ui/EmptyState";
+
 
 /* ── Status badge styles (shared with Records page) ──────────────────── */
 const STATUS_STYLES = {
@@ -252,26 +253,16 @@ export default function RecordDetail() {
               </button>
             </div>
 
-            {/* Empty state */}
             {rounds.length === 0 && (
-              <div className="flex flex-col items-center justify-center py-14 text-center rounded-2xl border border-gray-200/60 bg-white shadow-sm">
-                <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-gray-100 mb-4">
-                  <Inbox size={24} className="text-gray-400" />
-                </div>
-                <h4 className="text-base font-semibold text-gray-800">
-                  No rounds recorded yet
-                </h4>
-                <p className="mt-1 text-sm text-gray-500 max-w-xs">
-                  Track each stage of your interview process by adding rounds.
-                </p>
-                <button
-                  onClick={() => setModalOpen(true)}
-                  className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-primary-700 bg-primary-50 hover:bg-primary-100 transition-colors cursor-pointer"
-                >
-                  <Plus size={16} />
-                  Add First Round
-                </button>
-              </div>
+              <EmptyState
+                icon={Layers}
+                title="No rounds recorded yet"
+                description="Track each stage of your interview process by adding rounds."
+                iconBg="bg-primary-50"
+                iconColor="text-primary-400"
+                actionLabel="Add First Round"
+                onAction={() => setModalOpen(true)}
+              />
             )}
 
             {/* Timeline */}

@@ -48,6 +48,8 @@ import {
   getDropoutRates,
   getMyRoundPerformance,
 } from "../services/analyticsService";
+import SkeletonCard from "../components/ui/SkeletonCard";
+import EmptyState from "../components/ui/EmptyState";
 
 /* ── Color palette ───────────────────────────────────────────────────── */
 const INDIGO = {
@@ -92,19 +94,6 @@ const ROUND_TYPE_LABELS = {
 const ACADEMIC_YEARS = ["All", "2022-23", "2023-24", "2024-25"];
 
 /* ── Skeleton loaders ────────────────────────────────────────────────── */
-function CardSkeleton() {
-  return (
-    <div className="rounded-2xl border border-gray-200/60 bg-white p-5 shadow-sm animate-pulse">
-      <div className="flex items-center gap-3">
-        <div className="w-11 h-11 rounded-xl bg-gray-200" />
-        <div className="space-y-2">
-          <div className="h-3 w-24 rounded-lg bg-gray-200" />
-          <div className="h-7 w-14 rounded-lg bg-gray-200" />
-        </div>
-      </div>
-    </div>
-  );
-}
 
 function ChartSkeleton({ height = 300 }) {
   return (
@@ -128,15 +117,16 @@ function ChartSkeleton({ height = 300 }) {
   );
 }
 
-/* ── Empty state component ───────────────────────────────────────────── */
-function EmptyChart({ message }) {
+/* ── Empty chart component ─────────────────────────────────────── */
+function EmptyChart({ message, icon }) {
   return (
-    <div className="flex flex-col items-center justify-center py-12 text-center">
-      <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-gray-100 mb-3">
-        <Inbox size={22} className="text-gray-400" />
-      </div>
-      <p className="text-sm text-gray-500">{message}</p>
-    </div>
+    <EmptyState
+      icon={icon || Inbox}
+      title="No data available"
+      description={message}
+      iconBg="bg-gray-50"
+      iconColor="text-gray-400"
+    />
   );
 }
 
@@ -403,7 +393,7 @@ export default function Analytics() {
       {/* ════════════════════════════════════════════════════════════════ */}
       <div className="grid gap-4 sm:grid-cols-3">
         {summaryLoading ? (
-          Array.from({ length: 3 }).map((_, i) => <CardSkeleton key={i} />)
+          Array.from({ length: 3 }).map((_, i) => <SkeletonCard key={i} variant="stat" />)
         ) : summary ? (
           <>
             <StatCard

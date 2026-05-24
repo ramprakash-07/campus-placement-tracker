@@ -10,13 +10,14 @@ import {
   Trash2,
   AlertTriangle,
   Loader2,
-  Inbox,
   AlertCircle,
   RefreshCw,
   X,
 } from "lucide-react";
 import { getStudents, deleteStudent } from "../../services/coordinatorService";
 import Toast from "../../components/Toast";
+import SkeletonRow from "../../components/ui/SkeletonRow";
+import EmptyState from "../../components/ui/EmptyState";
 
 /* ── Delete confirmation dialog ──────────────────────────────────────── */
 function DeleteDialog({ student, onConfirm, onCancel, deleting }) {
@@ -71,18 +72,8 @@ function DeleteDialog({ student, onConfirm, onCancel, deleting }) {
   );
 }
 
-/* ── Skeleton row ────────────────────────────────────────────────────── */
-function SkeletonRow() {
-  return (
-    <tr className="animate-pulse">
-      <td className="px-5 py-4"><div className="h-4 w-28 rounded-lg bg-gray-200" /></td>
-      <td className="px-5 py-4"><div className="h-4 w-36 rounded-lg bg-gray-200" /></td>
-      <td className="px-5 py-4"><div className="h-4 w-20 rounded-lg bg-gray-200" /></td>
-      <td className="px-5 py-4"><div className="h-4 w-10 rounded-lg bg-gray-200" /></td>
-      <td className="px-5 py-4"><div className="h-8 w-8 rounded-lg bg-gray-200" /></td>
-    </tr>
-  );
-}
+/* ── Table column widths for skeleton ──────────────────────────────── */
+const STUDENT_SKELETON_WIDTHS = ["w-28", "w-36", "w-20", "w-10", "w-8"];
 
 /* ── Main component ──────────────────────────────────────────────────── */
 export default function CoordinatorStudents() {
@@ -192,7 +183,7 @@ export default function CoordinatorStudents() {
               </thead>
               <tbody className="divide-y divide-gray-50">
                 {Array.from({ length: 4 }).map((_, i) => (
-                  <SkeletonRow key={i} />
+                  <SkeletonRow key={i} widths={STUDENT_SKELETON_WIDTHS} />
                 ))}
               </tbody>
             </table>
@@ -202,17 +193,13 @@ export default function CoordinatorStudents() {
 
       {/* ── Empty ────────────────────────────────────────────────────── */}
       {!loading && !error && students.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-16 text-center">
-          <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-gray-100 mb-4">
-            <Inbox size={28} className="text-gray-400" />
-          </div>
-          <h3 className="text-lg font-semibold text-gray-800">
-            No students registered
-          </h3>
-          <p className="mt-1 text-sm text-gray-500 max-w-xs">
-            No student accounts have been created on the platform yet.
-          </p>
-        </div>
+        <EmptyState
+          icon={Users}
+          title="No students registered"
+          description="No student accounts have been created on the platform yet."
+          iconBg="bg-primary-50"
+          iconColor="text-primary-400"
+        />
       )}
 
       {/* ── Students table ───────────────────────────────────────────── */}

@@ -16,10 +16,11 @@ import {
   Globe,
   AlertCircle,
   RefreshCw,
-  Inbox,
 } from "lucide-react";
 import { getCompanies } from "../services/companyService";
 import AddCompanyModal from "../components/AddCompanyModal";
+import SkeletonCard from "../components/ui/SkeletonCard";
+import EmptyState from "../components/ui/EmptyState";
 
 /* ── Sector badge colour map ─────────────────────────────────────────── */
 const SECTOR_STYLES = {
@@ -42,24 +43,7 @@ function SectorBadge({ sector }) {
   );
 }
 
-/* ── Skeleton card for loading state ─────────────────────────────────── */
-function SkeletonCard() {
-  return (
-    <div className="rounded-2xl border border-gray-200/60 bg-white p-5 shadow-sm animate-pulse">
-      <div className="flex items-start gap-3">
-        <div className="w-11 h-11 rounded-xl bg-gray-200" />
-        <div className="flex-1 space-y-2.5">
-          <div className="h-4 w-3/4 rounded-lg bg-gray-200" />
-          <div className="h-3 w-1/3 rounded-lg bg-gray-200" />
-        </div>
-      </div>
-      <div className="mt-4 space-y-2">
-        <div className="h-3 w-full rounded-lg bg-gray-100" />
-        <div className="h-3 w-2/3 rounded-lg bg-gray-100" />
-      </div>
-    </div>
-  );
-}
+
 
 /* ── Main page component ─────────────────────────────────────────────── */
 export default function Companies() {
@@ -164,28 +148,19 @@ export default function Companies() {
 
       {/* ── Empty state ──────────────────────────────────────────────── */}
       {!loading && !error && filtered.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-16 text-center">
-          <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-gray-100 mb-4">
-            <Inbox size={28} className="text-gray-400" />
-          </div>
-          <h3 className="text-lg font-semibold text-gray-800">
-            {search ? "No matches found" : "No companies yet"}
-          </h3>
-          <p className="mt-1 text-sm text-gray-500 max-w-xs">
-            {search
+        <EmptyState
+          icon={Building2}
+          title={search ? "No matches found" : "No companies yet"}
+          description={
+            search
               ? `No companies match "${search}". Try a different term.`
-              : "Get started by adding your first company."}
-          </p>
-          {!search && (
-            <button
-              onClick={() => setModalOpen(true)}
-              className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-primary-700 bg-primary-50 hover:bg-primary-100 transition-colors cursor-pointer"
-            >
-              <Plus size={16} />
-              Add Company
-            </button>
-          )}
-        </div>
+              : "Get started by adding your first company to track placements."
+          }
+          iconBg="bg-primary-50"
+          iconColor="text-primary-400"
+          actionLabel={search ? undefined : "Add Company"}
+          onAction={search ? undefined : () => setModalOpen(true)}
+        />
       )}
 
       {/* ── Company card grid ────────────────────────────────────────── */}
