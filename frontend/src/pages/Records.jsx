@@ -9,8 +9,8 @@
  * • Horizontally scrollable table on mobile
  * • Loading skeleton, empty state, and error handling with retry
  */
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect, useCallback } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   FileText,
   Plus,
@@ -26,6 +26,7 @@ import { getRecords, deleteRecord } from "../services/recordService";
 import AddRecordModal from "../components/AddRecordModal";
 import SkeletonRow from "../components/ui/SkeletonRow";
 import EmptyState from "../components/ui/EmptyState";
+import Pagination from "../components/ui/Pagination";
 
 /* ── Status badge styles ─────────────────────────────────────────────── */
 const STATUS_STYLES = {
@@ -112,6 +113,8 @@ function DeleteDialog({ record, onConfirm, onCancel, deleting }) {
 /* ── Main page component ─────────────────────────────────────────────── */
 export default function Records() {
   const [records, setRecords] = useState([]);
+  const [totalRecords, setTotalRecords] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
@@ -121,13 +124,23 @@ export default function Records() {
   const [deleting, setDeleting] = useState(false);
   const navigate = useNavigate();
 
+  // Pagination via URL search params
+  const [searchParams, setSearchParams] = useSearchParams();
+  const currentPage = parseInt(searchParams.get("page") || "1", 10);
+
+  const setPage = (page) => {
+    setSearchParams({ page: String(page) });
+  };
+
   // ── Fetch records from API ──────────────────────────────────────────
-  const fetchRecords = async () => {
+  const fetchRecords = useCallback(async () => {
     setLoading(true);
     setError("");
     try {
-      const data = await getRecords();
-      setRecords(data);
+      const result = await getRecords({ page: currentPage, limit: 10 });
+      setRecords(result.data);
+      setTotalRecords(result.total);
+      setTotalPages(result.pages);
     } catch (err) {
       const msg =
         err.response?.data?.detail ||
@@ -137,11 +150,11 @@ export default function Records() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentPage]);
 
   useEffect(() => {
     fetchRecords();
-  }, []);
+  }, [fetchRecords]);
 
   // ── Handle delete ───────────────────────────────────────────────────
   const handleDelete = async () => {
@@ -174,7 +187,7 @@ export default function Records() {
           <div>
             <h2 className="text-2xl font-bold text-gray-900">Placement Records</h2>
             <p className="text-sm text-gray-500">
-              {records.length} {records.length === 1 ? "record" : "records"} tracked
+              {records.length} of {totalRecords} {totalRecords === 1 ? "record" : "records"} tracked
             </p>
           </div>
         </div>
@@ -352,11 +365,18 @@ export default function Records() {
           </div>
 
           {/* Table footer */}
-          <div className="px-5 py-3 border-t border-gray-100 bg-gray-50/40">
+          <div className="px-5 py-3 border-t border-gray-100 bg-gray-50/40 flex items-center justify-between">
             <p className="text-xs text-gray-400">
-              Showing {records.length} {records.length === 1 ? "record" : "records"}
+              Showing {records.length} of {totalRecords} {totalRecords === 1 ? "record" : "records"}
             </p>
           </div>
+
+          {/* Pagination */}
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setPage}
+          />
         </div>
       )}
 

@@ -156,8 +156,8 @@ export default function CoordinatorDashboard() {
     setRecordsLoading(true);
     setError("");
     try {
-      const data = await getRecords();
-      setRecords(data);
+      const result = await getRecords({ limit: 100 });
+      setRecords(result.data);
     } catch (err) {
       setError(
         err.response?.data?.detail || "Failed to load placement records."

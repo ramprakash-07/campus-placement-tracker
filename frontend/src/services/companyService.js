@@ -5,11 +5,12 @@ import api from "./api";
 
 /**
  * GET /companies
- * @param {string} [search] — optional name filter
- * @returns {object[]} list of companies
+ * @param {object} [options] — { search, page, limit }
+ * @returns {{ data: object[], total: number, page: number, pages: number }}
  */
-export const getCompanies = async (search) => {
-  const params = search ? { search } : {};
+export const getCompanies = async ({ search, page = 1, limit = 10 } = {}) => {
+  const params = { page, limit };
+  if (search) params.search = search;
   const { data } = await api.get("/companies", { params });
   return data;
 };

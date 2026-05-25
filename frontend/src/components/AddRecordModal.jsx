@@ -64,8 +64,8 @@ export default function AddRecordModal({ open, onClose, onCreated }) {
     const load = async () => {
       setCompaniesLoading(true);
       try {
-        const data = await getCompanies();
-        if (!cancelled) setCompanies(data);
+        const result = await getCompanies({ limit: 100 });
+        if (!cancelled) setCompanies(result.data);
       } catch {
         // silently fail — user can still type
       } finally {

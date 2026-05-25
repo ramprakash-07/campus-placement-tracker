@@ -5,7 +5,9 @@ All routes require a valid Bearer JWT (``get_current_user`` dependency).
 Ownership checks ensure a user can only access their own records.
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status
+import math
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from core.dependencies import get_current_user
@@ -15,6 +17,7 @@ from crud.placement_record import (
     delete_placement_record,
     get_placement_record,
     get_user_placement_records,
+    get_user_placement_records_paginated,
     update_placement_record,
 )
 from db.database import get_db
@@ -34,17 +37,28 @@ router = APIRouter(
 # ---------------------------------------------------------------------------
 # GET /placement-records — list current user's records
 # ---------------------------------------------------------------------------
-@router.get("/", response_model=list[PlacementRecordOut])
+@router.get("/")
 def list_placement_records(
+    page: int = Query(1, ge=1, description="Page number (1-indexed)"),
+    limit: int = Query(10, ge=1, le=100, description="Items per page"),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """
-    Return all placement records that belong to the authenticated user.
+    Return a paginated list of placement records for the authenticated user.
 
     Each record includes the nested ``company`` object and its ``rounds``.
+    Pass ``?page=1&limit=10`` for pagination.
     """
-    return get_user_placement_records(db, current_user.id)
+    items, total = get_user_placement_records_paginated(
+        db, current_user.id, page=page, limit=limit
+    )
+    return {
+        "data": items,
+        "total": total,
+        "page": page,
+        "pages": math.ceil(total / limit) if total else 1,
+    }
 
 
 # ---------------------------------------------------------------------------

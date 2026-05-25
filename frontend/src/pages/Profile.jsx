@@ -85,12 +85,12 @@ export default function Profile() {
     const load = async () => {
       setStatsLoading(true);
       try {
-        const [summary, records] = await Promise.all([
+        const [summary, recordsResult] = await Promise.all([
           getSummary(),
-          getRecords(),
+          getRecords({ limit: 1 }),
         ]);
         setStats({
-          total_records: records?.length || 0,
+          total_records: recordsResult?.total || 0,
           total_rounds: summary?.total_rounds || 0,
           selection_rate: summary?.selection_rate || 0,
         });

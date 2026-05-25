@@ -8,7 +8,8 @@
  * • Loading skeleton while fetching
  * • API error handling with retry option
  */
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   Building2,
   Search,
@@ -21,6 +22,7 @@ import { getCompanies } from "../services/companyService";
 import AddCompanyModal from "../components/AddCompanyModal";
 import SkeletonCard from "../components/ui/SkeletonCard";
 import EmptyState from "../components/ui/EmptyState";
+import Pagination from "../components/ui/Pagination";
 
 /* ── Sector badge colour map ─────────────────────────────────────────── */
 const SECTOR_STYLES = {
@@ -48,18 +50,44 @@ function SectorBadge({ sector }) {
 /* ── Main page component ─────────────────────────────────────────────── */
 export default function Companies() {
   const [companies, setCompanies] = useState([]);
+  const [totalCompanies, setTotalCompanies] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading]     = useState(true);
   const [error, setError]         = useState("");
-  const [search, setSearch]       = useState("");
   const [modalOpen, setModalOpen] = useState(false);
 
-  // ── Fetch companies from API ─────────────────────────────────────────
-  const fetchCompanies = async () => {
+  // Pagination + search via URL search params
+  const [searchParams, setSearchParams] = useSearchParams();
+  const currentPage = parseInt(searchParams.get("page") || "1", 10);
+  const search = searchParams.get("search") || "";
+
+  // Debounce timer ref for search
+  const debounceRef = useRef(null);
+
+  const setPage = (page) => {
+    const params = { page: String(page) };
+    if (search) params.search = search;
+    setSearchParams(params);
+  };
+
+  const handleSearchChange = (value) => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      const params = { page: "1" };
+      if (value.trim()) params.search = value.trim();
+      setSearchParams(params);
+    }, 400);
+  };
+
+  // ── Fetch companies from API ─────────────────────────────────────
+  const fetchCompanies = useCallback(async () => {
     setLoading(true);
     setError("");
     try {
-      const data = await getCompanies();
-      setCompanies(data);
+      const result = await getCompanies({ search: search || undefined, page: currentPage, limit: 10 });
+      setCompanies(result.data);
+      setTotalCompanies(result.total);
+      setTotalPages(result.pages);
     } catch (err) {
       const msg =
         err.response?.data?.detail ||
@@ -69,18 +97,11 @@ export default function Companies() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentPage, search]);
 
   useEffect(() => {
     fetchCompanies();
-  }, []);
-
-  // ── Client-side search filter ────────────────────────────────────────
-  const filtered = useMemo(() => {
-    if (!search.trim()) return companies;
-    const q = search.toLowerCase();
-    return companies.filter((c) => c.name.toLowerCase().includes(q));
-  }, [companies, search]);
+  }, [fetchCompanies]);
 
   return (
     <div className="space-y-6">
@@ -93,7 +114,7 @@ export default function Companies() {
           <div>
             <h2 className="text-2xl font-bold text-gray-900">Companies</h2>
             <p className="text-sm text-gray-500">
-              {companies.length} {companies.length === 1 ? "company" : "companies"} registered
+              {totalCompanies} {totalCompanies === 1 ? "company" : "companies"} registered
             </p>
           </div>
         </div>
@@ -115,8 +136,8 @@ export default function Companies() {
         />
         <input
           type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          defaultValue={search}
+          onChange={(e) => handleSearchChange(e.target.value)}
           placeholder="Search companies by name…"
           className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-300 bg-white text-sm text-gray-900 placeholder-gray-400 outline-none transition-all focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20"
         />
@@ -147,7 +168,7 @@ export default function Companies() {
       )}
 
       {/* ── Empty state ──────────────────────────────────────────────── */}
-      {!loading && !error && filtered.length === 0 && (
+      {!loading && !error && companies.length === 0 && (
         <EmptyState
           icon={Building2}
           title={search ? "No matches found" : "No companies yet"}
@@ -164,54 +185,63 @@ export default function Companies() {
       )}
 
       {/* ── Company card grid ────────────────────────────────────────── */}
-      {!loading && !error && filtered.length > 0 && (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((company) => (
-            <div
-              key={company.id}
-              className="group relative rounded-2xl border border-gray-200/60 bg-white p-5 shadow-sm hover:shadow-md hover:border-primary-200/60 transition-all duration-200"
-            >
-              {/* Header row */}
-              <div className="flex items-start gap-3">
-                <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-gradient-to-br from-primary-50 to-primary-100 group-hover:from-primary-100 group-hover:to-primary-200 transition-colors flex-shrink-0">
-                  <Building2 size={20} className="text-primary-600" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <h3 className="text-base font-semibold text-gray-900 truncate">
-                    {company.name}
-                  </h3>
-                  <div className="mt-1">
-                    <SectorBadge sector={company.sector} />
+      {!loading && !error && companies.length > 0 && (
+        <>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {companies.map((company) => (
+              <div
+                key={company.id}
+                className="group relative rounded-2xl border border-gray-200/60 bg-white p-5 shadow-sm hover:shadow-md hover:border-primary-200/60 transition-all duration-200"
+              >
+                {/* Header row */}
+                <div className="flex items-start gap-3">
+                  <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-gradient-to-br from-primary-50 to-primary-100 group-hover:from-primary-100 group-hover:to-primary-200 transition-colors flex-shrink-0">
+                    <Building2 size={20} className="text-primary-600" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <h3 className="text-base font-semibold text-gray-900 truncate">
+                      {company.name}
+                    </h3>
+                    <div className="mt-1">
+                      <SectorBadge sector={company.sector} />
+                    </div>
                   </div>
                 </div>
+
+                {/* Website link */}
+                {company.website && (
+                  <a
+                    href={company.website}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-4 inline-flex items-center gap-1.5 text-sm text-primary-600 hover:text-primary-800 font-medium transition-colors group/link"
+                  >
+                    <Globe size={14} className="flex-shrink-0" />
+                    <span className="truncate max-w-[200px] group-hover/link:underline">
+                      {company.website.replace(/^https?:\/\//, "")}
+                    </span>
+                  </a>
+                )}
+
+                {/* Created date */}
+                <p className="mt-3 text-xs text-gray-400">
+                  Added {new Date(company.created_at).toLocaleDateString("en-IN", {
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
+                  })}
+                </p>
               </div>
+            ))}
+          </div>
 
-              {/* Website link */}
-              {company.website && (
-                <a
-                  href={company.website}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-4 inline-flex items-center gap-1.5 text-sm text-primary-600 hover:text-primary-800 font-medium transition-colors group/link"
-                >
-                  <Globe size={14} className="flex-shrink-0" />
-                  <span className="truncate max-w-[200px] group-hover/link:underline">
-                    {company.website.replace(/^https?:\/\//, "")}
-                  </span>
-                </a>
-              )}
-
-              {/* Created date */}
-              <p className="mt-3 text-xs text-gray-400">
-                Added {new Date(company.created_at).toLocaleDateString("en-IN", {
-                  day: "numeric",
-                  month: "short",
-                  year: "numeric",
-                })}
-              </p>
-            </div>
-          ))}
-        </div>
+          {/* Pagination */}
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setPage}
+          />
+        </>
       )}
 
       {/* ── Add Company Modal ────────────────────────────────────────── */}

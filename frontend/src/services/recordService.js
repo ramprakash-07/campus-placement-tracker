@@ -5,10 +5,11 @@ import api from "./api";
 
 /**
  * GET /placement-records
- * @returns {object[]} current user's placement records (with nested company & rounds)
+ * @param {object} [options] — { page, limit }
+ * @returns {{ data: object[], total: number, page: number, pages: number }}
  */
-export const getRecords = async () => {
-  const { data } = await api.get("/placement-records");
+export const getRecords = async ({ page = 1, limit = 10 } = {}) => {
+  const { data } = await api.get("/placement-records", { params: { page, limit } });
   return data;
 };
 

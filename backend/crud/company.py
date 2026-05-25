@@ -29,6 +29,25 @@ def get_companies(
     return query.order_by(Company.id).all()
 
 
+def get_companies_paginated(
+    db: Session,
+    search: Optional[str] = None,
+    page: int = 1,
+    limit: int = 10,
+) -> tuple[list[Company], int]:
+    """
+    Return a page of companies with the total count.
+
+    Returns a tuple of ``(items, total_count)``.
+    """
+    query = db.query(Company)
+    if search:
+        query = query.filter(Company.name.ilike(f"%{search}%"))
+    total = query.count()
+    items = query.order_by(Company.id).offset((page - 1) * limit).limit(limit).all()
+    return items, total
+
+
 def get_company(db: Session, company_id: int) -> Optional[Company]:
     """Return a single company by primary key, or ``None``."""
     return db.query(Company).filter(Company.id == company_id).first()

@@ -37,6 +37,30 @@ def get_user_placement_records(
     )
 
 
+def get_user_placement_records_paginated(
+    db: Session,
+    user_id: int,
+    page: int = 1,
+    limit: int = 10,
+) -> tuple[list[PlacementRecord], int]:
+    """
+    Return a page of placement records for *user_id* with the total count.
+
+    Returns a tuple of ``(items, total_count)``.
+    """
+    base = db.query(PlacementRecord).filter(PlacementRecord.user_id == user_id)
+    total = base.count()
+    items = (
+        base
+        .options(joinedload(PlacementRecord.company), joinedload(PlacementRecord.rounds))
+        .order_by(PlacementRecord.id)
+        .offset((page - 1) * limit)
+        .limit(limit)
+        .all()
+    )
+    return items, total
+
+
 def get_placement_record(
     db: Session,
     record_id: int,

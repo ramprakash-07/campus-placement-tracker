@@ -6,6 +6,8 @@ All routes require a valid Bearer JWT (``get_current_user`` dependency).
 
 from typing import Optional
 
+import math
+
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
@@ -14,6 +16,7 @@ from crud.company import (
     create_company,
     delete_company,
     get_companies,
+    get_companies_paginated,
     get_company,
     get_company_by_name,
     update_company,
@@ -32,17 +35,26 @@ router = APIRouter(
 # ---------------------------------------------------------------------------
 # GET /companies — list all (optional search)
 # ---------------------------------------------------------------------------
-@router.get("/", response_model=list[CompanyOut])
+@router.get("/")
 def list_companies(
     search: Optional[str] = Query(None, description="Filter companies by name"),
+    page: int = Query(1, ge=1, description="Page number (1-indexed)"),
+    limit: int = Query(10, ge=1, le=100, description="Items per page"),
     db: Session = Depends(get_db),
 ):
     """
-    Return every company.
+    Return a paginated list of companies.
 
     Pass ``?search=<term>`` to filter by name (case-insensitive partial match).
+    Pass ``?page=1&limit=10`` for pagination.
     """
-    return get_companies(db, search=search)
+    items, total = get_companies_paginated(db, search=search, page=page, limit=limit)
+    return {
+        "data": items,
+        "total": total,
+        "page": page,
+        "pages": math.ceil(total / limit) if total else 1,
+    }
 
 
 # ---------------------------------------------------------------------------
