@@ -27,6 +27,7 @@ import AddRecordModal from "../components/AddRecordModal";
 import SkeletonRow from "../components/ui/SkeletonRow";
 import EmptyState from "../components/ui/EmptyState";
 import Pagination from "../components/ui/Pagination";
+import { useToast } from "../store/ToastContext";
 
 /* ── Status badge styles ─────────────────────────────────────────────── */
 const STATUS_STYLES = {
@@ -123,6 +124,7 @@ export default function Records() {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleting, setDeleting] = useState(false);
   const navigate = useNavigate();
+  const { addToast } = useToast();
 
   // Pagination via URL search params
   const [searchParams, setSearchParams] = useSearchParams();
@@ -147,6 +149,7 @@ export default function Records() {
         err.response?.data?.message ||
         "Failed to load placement records. Please try again.";
       setError(msg);
+      addToast({ message: msg, type: "error" });
     } finally {
       setLoading(false);
     }
@@ -163,6 +166,7 @@ export default function Records() {
     try {
       await deleteRecord(deleteTarget.id);
       setDeleteTarget(null);
+      addToast({ message: "Record deleted successfully.", type: "success" });
       fetchRecords();
     } catch (err) {
       const msg =
@@ -170,6 +174,7 @@ export default function Records() {
         err.response?.data?.message ||
         "Failed to delete record.";
       setError(msg);
+      addToast({ message: msg, type: "error" });
       setDeleteTarget(null);
     } finally {
       setDeleting(false);

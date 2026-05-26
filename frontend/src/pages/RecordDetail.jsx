@@ -30,6 +30,7 @@ import { getRounds, updateRound, deleteRound } from "../services/roundService";
 import RoundTimeline from "../components/RoundTimeline";
 import AddRoundModal from "../components/AddRoundModal";
 import EmptyState from "../components/ui/EmptyState";
+import { useToast } from "../store/ToastContext";
 
 
 /* ── Status badge styles (shared with Records page) ──────────────────── */
@@ -102,6 +103,7 @@ export default function RecordDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
+  const { addToast } = useToast();
 
   // ── Fetch record + rounds ───────────────────────────────────────────
   const fetchData = useCallback(async () => {
@@ -123,6 +125,7 @@ export default function RecordDetail() {
         err.response?.data?.message ||
         "Failed to load record details.";
       setError(msg);
+      addToast({ message: msg, type: "error" });
     } finally {
       setLoading(false);
     }
@@ -134,13 +137,29 @@ export default function RecordDetail() {
 
   // ── Round CRUD handlers ─────────────────────────────────────────────
   const handleEditRound = async (roundId, payload) => {
-    await updateRound(roundId, payload);
-    await fetchData(); // refresh
+    try {
+      await updateRound(roundId, payload);
+      addToast({ message: "Round updated.", type: "success" });
+      await fetchData();
+    } catch (err) {
+      addToast({
+        message: err.response?.data?.detail || "Failed to update round.",
+        type: "error",
+      });
+    }
   };
 
   const handleDeleteRound = async (roundId) => {
-    await deleteRound(roundId);
-    await fetchData(); // refresh
+    try {
+      await deleteRound(roundId);
+      addToast({ message: "Round deleted.", type: "success" });
+      await fetchData();
+    } catch (err) {
+      addToast({
+        message: err.response?.data?.detail || "Failed to delete round.",
+        type: "error",
+      });
+    }
   };
 
   return (

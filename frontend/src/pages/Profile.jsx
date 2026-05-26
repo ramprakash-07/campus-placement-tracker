@@ -23,10 +23,10 @@ import {
   CalendarDays,
 } from "lucide-react";
 import { useAuth } from "../store/AuthContext";
+import { useToast } from "../store/ToastContext";
 import { updateProfile, changePassword } from "../services/userService";
 import { getSummary } from "../services/analyticsService";
 import { getRecords } from "../services/recordService";
-import Toast from "../components/Toast";
 
 /* ── Summary stat card ───────────────────────────────────────────────── */
 function StatCard({ icon: Icon, label, value, color, bgFrom, bgTo }) {
@@ -77,8 +77,8 @@ export default function Profile() {
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
-  // ── Toast ───────────────────────────────────────────────────────────
-  const [toast, setToast] = useState(null);
+  // ── Toast ─────────────────────────────────────────────────────────────
+  const { addToast } = useToast();
 
   // ── Fetch summary stats ─────────────────────────────────────────────
   useEffect(() => {
@@ -111,7 +111,7 @@ export default function Profile() {
   // ── Handle profile update ───────────────────────────────────────────
   const handleSaveProfile = async () => {
     if (!editName.trim()) {
-      setToast({ message: "Name cannot be empty.", type: "error" });
+      addToast({ message: "Name cannot be empty.", type: "error" });
       return;
     }
     if (editName.trim() === user?.full_name) {
@@ -128,13 +128,13 @@ export default function Profile() {
         payload: { user: updated, token: localStorage.getItem("access_token") },
       });
       setEditing(false);
-      setToast({ message: "Profile updated successfully!", type: "success" });
+      addToast({ message: "Profile updated successfully!", type: "success" });
     } catch (err) {
       const msg =
         err.response?.data?.detail ||
         err.response?.data?.message ||
         "Failed to update profile.";
-      setToast({ message: msg, type: "error" });
+      addToast({ message: msg, type: "error" });
     } finally {
       setSavingProfile(false);
     }
@@ -145,27 +145,27 @@ export default function Profile() {
     setEditing(false);
   };
 
-  // ── Handle password change ──────────────────────────────────────────
+  // ── Handle password change ──────────────────────────────────────
   const handleChangePassword = async (e) => {
     e.preventDefault();
 
     if (!pwForm.old_password) {
-      setToast({ message: "Current password is required.", type: "error" });
+      addToast({ message: "Current password is required.", type: "error" });
       return;
     }
     if (!pwForm.new_password) {
-      setToast({ message: "New password is required.", type: "error" });
+      addToast({ message: "New password is required.", type: "error" });
       return;
     }
     if (pwForm.new_password.length < 6) {
-      setToast({
+      addToast({
         message: "New password must be at least 6 characters.",
         type: "error",
       });
       return;
     }
     if (pwForm.new_password !== pwForm.confirm_new_password) {
-      setToast({ message: "New passwords do not match.", type: "error" });
+      addToast({ message: "New passwords do not match.", type: "error" });
       return;
     }
 
@@ -179,13 +179,13 @@ export default function Profile() {
       setShowOld(false);
       setShowNew(false);
       setShowConfirm(false);
-      setToast({ message: "Password changed successfully!", type: "success" });
+      addToast({ message: "Password changed successfully!", type: "success" });
     } catch (err) {
       const msg =
         err.response?.data?.detail ||
         err.response?.data?.message ||
         "Failed to change password.";
-      setToast({ message: msg, type: "error" });
+      addToast({ message: msg, type: "error" });
     } finally {
       setSavingPassword(false);
     }
@@ -193,14 +193,6 @@ export default function Profile() {
 
   return (
     <div className="space-y-6">
-      {/* ── Toast notification ──────────────────────────────────────── */}
-      {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast(null)}
-        />
-      )}
 
       {/* ── Page header ──────────────────────────────────────────────── */}
       <div className="flex items-center gap-3">

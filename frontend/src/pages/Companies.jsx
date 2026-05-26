@@ -23,6 +23,7 @@ import AddCompanyModal from "../components/AddCompanyModal";
 import SkeletonCard from "../components/ui/SkeletonCard";
 import EmptyState from "../components/ui/EmptyState";
 import Pagination from "../components/ui/Pagination";
+import { useToast } from "../store/ToastContext";
 
 /* ── Sector badge colour map ─────────────────────────────────────────── */
 const SECTOR_STYLES = {
@@ -55,6 +56,7 @@ export default function Companies() {
   const [loading, setLoading]     = useState(true);
   const [error, setError]         = useState("");
   const [modalOpen, setModalOpen] = useState(false);
+  const { addToast } = useToast();
 
   // Pagination + search via URL search params
   const [searchParams, setSearchParams] = useSearchParams();
@@ -94,6 +96,7 @@ export default function Companies() {
         err.response?.data?.message ||
         "Failed to load companies. Please try again.";
       setError(msg);
+      addToast({ message: msg, type: "error" });
     } finally {
       setLoading(false);
     }

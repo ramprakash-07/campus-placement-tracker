@@ -15,7 +15,7 @@ import {
   X,
 } from "lucide-react";
 import { getStudents, deleteStudent } from "../../services/coordinatorService";
-import Toast from "../../components/Toast";
+import { useToast } from "../../store/ToastContext";
 import SkeletonRow from "../../components/ui/SkeletonRow";
 import EmptyState from "../../components/ui/EmptyState";
 
@@ -82,7 +82,7 @@ export default function CoordinatorStudents() {
   const [error, setError] = useState("");
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleting, setDeleting] = useState(false);
-  const [toast, setToast] = useState(null);
+  const { addToast } = useToast();
 
   const fetchStudents = useCallback(async () => {
     setLoading(true);
@@ -108,14 +108,14 @@ export default function CoordinatorStudents() {
     setDeleting(true);
     try {
       await deleteStudent(deleteTarget.id);
-      setToast({
+      addToast({
         message: `${deleteTarget.full_name}'s account has been deleted.`,
         type: "success",
       });
       setDeleteTarget(null);
       fetchStudents();
     } catch (err) {
-      setToast({
+      addToast({
         message: err.response?.data?.detail || "Failed to delete student.",
         type: "error",
       });
@@ -296,15 +296,6 @@ export default function CoordinatorStudents() {
         onCancel={() => setDeleteTarget(null)}
         deleting={deleting}
       />
-
-      {/* ── Toast ────────────────────────────────────────────────────── */}
-      {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast(null)}
-        />
-      )}
     </div>
   );
 }

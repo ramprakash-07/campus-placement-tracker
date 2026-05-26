@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate, Navigate } from "react-router-dom";
 import { UserPlus, Loader2, Mail, Lock, User } from "lucide-react";
 import { useAuth } from "../store/AuthContext";
+import { useToast } from "../store/ToastContext";
 import { register as registerApi, login as loginApi } from "../services/authService";
 import api from "../services/api";
 
@@ -30,6 +31,7 @@ function validate(form) {
 export default function Register() {
   const navigate = useNavigate();
   const { login, isAuthenticated, loading: authLoading } = useAuth();
+  const { addToast } = useToast();
 
   const [form, setForm] = useState({
     full_name: "",
@@ -119,6 +121,7 @@ export default function Register() {
         err.response?.data?.message ||
         "Registration failed. Please try again.";
       setApiError(msg);
+      addToast({ message: msg, type: "error" });
       localStorage.removeItem("access_token");
     } finally {
       setSubmitting(false);

@@ -23,7 +23,7 @@ import {
 import { getStudents, updateRecordStatus } from "../../services/coordinatorService";
 import { getSummary, getPackages } from "../../services/analyticsService";
 import { getRecords } from "../../services/recordService";
-import Toast from "../../components/Toast";
+import { useToast } from "../../store/ToastContext";
 import SkeletonRow from "../../components/ui/SkeletonRow";
 import EmptyState from "../../components/ui/EmptyState";
 
@@ -123,7 +123,7 @@ export default function CoordinatorDashboard() {
   const [pendingMutationId, setPendingMutationId] = useState(null);
 
   // Toast
-  const [toast, setToast] = useState(null);
+  const { addToast } = useToast();
 
   // ── Fetch KPI data ──────────────────────────────────────────────────
   const fetchKpis = useCallback(async () => {
@@ -177,7 +177,7 @@ export default function CoordinatorDashboard() {
     setPendingMutationId(recordId);
     try {
       await updateRecordStatus(recordId, newStatus);
-      setToast({
+      addToast({
         message:
           newStatus === "coordinator_approved"
             ? "Record approved"
@@ -188,7 +188,7 @@ export default function CoordinatorDashboard() {
       await fetchRecords();
       await fetchKpis();
     } catch (err) {
-      setToast({
+      addToast({
         message:
           err.response?.data?.detail || "Failed to update record status.",
         type: "error",
@@ -538,15 +538,6 @@ export default function CoordinatorDashboard() {
           </div>
         )}
       </div>
-
-      {/* ── Toast ────────────────────────────────────────────────────── */}
-      {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast(null)}
-        />
-      )}
     </div>
   );
 }

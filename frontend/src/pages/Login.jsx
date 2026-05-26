@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate, Navigate } from "react-router-dom";
 import { LogIn, Loader2, Mail, Lock } from "lucide-react";
 import { useAuth } from "../store/AuthContext";
+import { useToast } from "../store/ToastContext";
 import { login as loginApi } from "../services/authService";
 import api from "../services/api";
 
@@ -23,6 +24,7 @@ function validate(form) {
 export default function Login() {
   const navigate = useNavigate();
   const { login, isAuthenticated, loading: authLoading } = useAuth();
+  const { addToast } = useToast();
 
   const [form, setForm] = useState({ email: "", password: "" });
   const [fieldErrors, setFieldErrors] = useState({});
@@ -83,6 +85,7 @@ export default function Login() {
         err.response?.data?.message ||
         "Invalid email or password";
       setApiError(msg);
+      addToast({ message: msg, type: "error" });
       localStorage.removeItem("access_token");
     } finally {
       setSubmitting(false);
