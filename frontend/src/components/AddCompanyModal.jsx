@@ -6,45 +6,46 @@
  * notifies the parent to refresh the list.
  */
 import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { X, Loader2, Building2, AlertCircle } from "lucide-react";
 import { createCompany } from "../services/companyService";
+import { addCompanySchema } from "../utils/validationSchemas";
 
 const SECTORS = ["Tech", "Finance", "Core", "Consulting", "Other"];
 
 export default function AddCompanyModal({ open, onClose, onCreated }) {
-  const [form, setForm] = useState({ name: "", sector: "", website: "" });
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors, isValid },
+  } = useForm({
+    resolver: zodResolver(addCompanySchema),
+    mode: "onChange",
+    defaultValues: { name: "", sector: "", website: "" },
+  });
+
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
+  // Hooks are called above — safe to bail out now.
   if (!open) return null;
 
-  const handleChange = (e) => {
-    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
-    setError("");
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    // ── Client-side validation ───────────────────────────────────────
-    if (!form.name.trim()) {
-      setError("Company name is required.");
-      return;
-    }
-
+  const onSubmit = async (data) => {
     setSubmitting(true);
     setError("");
 
     try {
       const payload = {
-        name: form.name.trim(),
-        sector: form.sector || null,
-        website: form.website.trim() || null,
+        name: data.name.trim(),
+        sector: data.sector || null,
+        website: data.website.trim() || null,
       };
       await createCompany(payload);
-      setForm({ name: "", sector: "", website: "" });
-      onCreated();   // refresh parent list
-      onClose();     // close modal
+      reset();
+      onCreated(); // refresh parent list
+      onClose(); // close modal
     } catch (err) {
       const msg =
         err.response?.data?.detail ||
@@ -86,8 +87,8 @@ export default function AddCompanyModal({ open, onClose, onCreated }) {
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-5">
-          {/* Error alert */}
+        <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-5">
+          {/* API Error alert */}
           {error && (
             <div className="flex items-start gap-2.5 px-4 py-3 rounded-xl bg-red-50 border border-red-100 text-sm text-red-700 animate-fadeIn">
               <AlertCircle size={16} className="mt-0.5 flex-shrink-0" />
@@ -105,14 +106,15 @@ export default function AddCompanyModal({ open, onClose, onCreated }) {
             </label>
             <input
               id="company-name"
-              name="name"
               type="text"
-              value={form.name}
-              onChange={handleChange}
+              {...register("name")}
               placeholder="e.g. Google"
               autoFocus
               className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 bg-gray-50/50 text-sm text-gray-900 placeholder-gray-400 outline-none transition-all focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 focus:bg-white"
             />
+            {errors.name && (
+              <p className="text-sm text-red-600">{errors.name.message}</p>
+            )}
           </div>
 
           {/* Sector */}
@@ -125,9 +127,7 @@ export default function AddCompanyModal({ open, onClose, onCreated }) {
             </label>
             <select
               id="company-sector"
-              name="sector"
-              value={form.sector}
-              onChange={handleChange}
+              {...register("sector")}
               className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 bg-gray-50/50 text-sm text-gray-900 outline-none transition-all focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 focus:bg-white appearance-none cursor-pointer"
             >
               <option value="">Select sector…</option>
@@ -149,13 +149,14 @@ export default function AddCompanyModal({ open, onClose, onCreated }) {
             </label>
             <input
               id="company-website"
-              name="website"
               type="url"
-              value={form.website}
-              onChange={handleChange}
+              {...register("website")}
               placeholder="https://example.com"
               className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 bg-gray-50/50 text-sm text-gray-900 placeholder-gray-400 outline-none transition-all focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 focus:bg-white"
             />
+            {errors.website && (
+              <p className="text-sm text-red-600">{errors.website.message}</p>
+            )}
           </div>
 
           {/* Actions */}
@@ -170,7 +171,7 @@ export default function AddCompanyModal({ open, onClose, onCreated }) {
             </button>
             <button
               type="submit"
-              disabled={submitting}
+              disabled={!isValid || submitting}
               className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 shadow-md shadow-primary-500/20 transition-all cursor-pointer disabled:opacity-60"
             >
               {submitting && <Loader2 size={16} className="animate-spin" />}

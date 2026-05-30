@@ -1,31 +1,13 @@
 import { useState } from "react";
 import { Link, useNavigate, Navigate } from "react-router-dom";
 import { UserPlus, Loader2, Mail, Lock, User } from "lucide-react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "../store/AuthContext";
 import { useToast } from "../store/ToastContext";
+import { registerSchema } from "../utils/validationSchemas";
 import { register as registerApi, login as loginApi } from "../services/authService";
 import api from "../services/api";
-
-// ── Validation helpers ─────────────────────────────────────────────────────
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-function validate(form) {
-  const errors = {};
-
-  if (!form.full_name.trim()) errors.full_name = "Full name is required";
-
-  if (!form.email.trim()) errors.email = "Email is required";
-  else if (!EMAIL_RE.test(form.email)) errors.email = "Enter a valid email address";
-
-  if (!form.password) errors.password = "Password is required";
-  else if (form.password.length < 8) errors.password = "Password must be at least 8 characters";
-
-  if (!form.confirm_password) errors.confirm_password = "Please confirm your password";
-  else if (form.password && form.confirm_password !== form.password)
-    errors.confirm_password = "Passwords do not match";
-
-  return errors;
-}
 
 // ── Component ──────────────────────────────────────────────────────────────
 export default function Register() {
@@ -33,78 +15,39 @@ export default function Register() {
   const { login, isAuthenticated, loading: authLoading } = useAuth();
   const { addToast } = useToast();
 
-  const [form, setForm] = useState({
-    full_name: "",
-    email: "",
-    password: "",
-    confirm_password: "",
+  const {
+    register: registerField,
+    handleSubmit,
+    formState: { errors, isValid },
+  } = useForm({
+    resolver: zodResolver(registerSchema),
+    mode: "onBlur",
+    defaultValues: { full_name: "", email: "", password: "", confirm_password: "" },
   });
-  const [fieldErrors, setFieldErrors] = useState({});
+
   const [apiError, setApiError] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [touched, setTouched] = useState({});
 
   // If already authenticated, redirect to dashboard
   if (!authLoading && isAuthenticated) {
     return <Navigate to="/" replace />;
   }
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    const next = { ...form, [name]: value };
-    setForm(next);
-
-    // Live-clear field error once the user starts fixing it
-    if (touched[name]) {
-      const errs = validate(next);
-      setFieldErrors((prev) => ({ ...prev, [name]: errs[name] || "" }));
-    }
-
-    // Also re-validate confirm_password when password changes
-    if (name === "password" && touched.confirm_password) {
-      const errs = validate(next);
-      setFieldErrors((prev) => ({
-        ...prev,
-        confirm_password: errs.confirm_password || "",
-      }));
-    }
-  };
-
-  const handleBlur = (e) => {
-    const { name } = e.target;
-    setTouched((prev) => ({ ...prev, [name]: true }));
-    const errs = validate(form);
-    setFieldErrors((prev) => ({ ...prev, [name]: errs[name] || "" }));
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const onSubmit = async (data) => {
     setApiError("");
-
-    // Run full validation
-    const errs = validate(form);
-    setFieldErrors(errs);
-    setTouched({
-      full_name: true,
-      email: true,
-      password: true,
-      confirm_password: true,
-    });
-    if (Object.keys(errs).length) return;
-
     setSubmitting(true);
     try {
       // 1. Register the user (send only the fields the API expects)
       await registerApi({
-        full_name: form.full_name,
-        email: form.email,
-        password: form.password,
+        full_name: data.full_name,
+        email: data.email,
+        password: data.password,
       });
 
       // 2. Auto-login after successful registration
       const { access_token } = await loginApi({
-        email: form.email,
-        password: form.password,
+        email: data.email,
+        password: data.password,
       });
 
       // 3. Fetch user profile
@@ -132,7 +75,7 @@ export default function Register() {
   const inputClass = (field) =>
     `mt-1 block w-full rounded-lg border px-3 py-2.5 text-sm shadow-sm transition-colors
      focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:border-primary-500
-     ${fieldErrors[field] ? "border-red-400 bg-red-50/40" : "border-gray-300 bg-white"}`;
+     ${errors[field] ? "border-red-400 bg-red-50/40" : "border-gray-300 bg-white"}`;
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-primary-50 via-white to-indigo-50 px-4 py-10">
@@ -165,7 +108,7 @@ export default function Register() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-5" noValidate>
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5" noValidate>
             {/* Full Name */}
             <div>
               <label htmlFor="register-name" className="mb-1 block text-sm font-medium text-gray-700">
@@ -177,18 +120,15 @@ export default function Register() {
                 </span>
                 <input
                   id="register-name"
-                  name="full_name"
                   type="text"
                   autoComplete="name"
-                  value={form.full_name}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
+                  {...registerField("full_name")}
                   className={`${inputClass("full_name")} pl-9`}
                   placeholder="Jane Doe"
                 />
               </div>
-              {fieldErrors.full_name && (
-                <p className="mt-1.5 text-xs text-red-600 animate-[fadeUp_0.2s_ease-out]">{fieldErrors.full_name}</p>
+              {errors.full_name && (
+                <p className="mt-1.5 text-xs text-red-600 animate-[fadeUp_0.2s_ease-out]">{errors.full_name.message}</p>
               )}
             </div>
 
@@ -203,18 +143,15 @@ export default function Register() {
                 </span>
                 <input
                   id="register-email"
-                  name="email"
                   type="email"
                   autoComplete="email"
-                  value={form.email}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
+                  {...registerField("email")}
                   className={`${inputClass("email")} pl-9`}
                   placeholder="you@example.com"
                 />
               </div>
-              {fieldErrors.email && (
-                <p className="mt-1.5 text-xs text-red-600 animate-[fadeUp_0.2s_ease-out]">{fieldErrors.email}</p>
+              {errors.email && (
+                <p className="mt-1.5 text-xs text-red-600 animate-[fadeUp_0.2s_ease-out]">{errors.email.message}</p>
               )}
             </div>
 
@@ -229,18 +166,15 @@ export default function Register() {
                 </span>
                 <input
                   id="register-password"
-                  name="password"
                   type="password"
                   autoComplete="new-password"
-                  value={form.password}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
+                  {...registerField("password")}
                   className={`${inputClass("password")} pl-9`}
                   placeholder="••••••••"
                 />
               </div>
-              {fieldErrors.password && (
-                <p className="mt-1.5 text-xs text-red-600 animate-[fadeUp_0.2s_ease-out]">{fieldErrors.password}</p>
+              {errors.password && (
+                <p className="mt-1.5 text-xs text-red-600 animate-[fadeUp_0.2s_ease-out]">{errors.password.message}</p>
               )}
             </div>
 
@@ -255,25 +189,22 @@ export default function Register() {
                 </span>
                 <input
                   id="register-confirm"
-                  name="confirm_password"
                   type="password"
                   autoComplete="new-password"
-                  value={form.confirm_password}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
+                  {...registerField("confirm_password")}
                   className={`${inputClass("confirm_password")} pl-9`}
                   placeholder="••••••••"
                 />
               </div>
-              {fieldErrors.confirm_password && (
-                <p className="mt-1.5 text-xs text-red-600 animate-[fadeUp_0.2s_ease-out]">{fieldErrors.confirm_password}</p>
+              {errors.confirm_password && (
+                <p className="mt-1.5 text-xs text-red-600 animate-[fadeUp_0.2s_ease-out]">{errors.confirm_password.message}</p>
               )}
             </div>
 
             {/* Submit */}
             <button
               type="submit"
-              disabled={submitting}
+              disabled={!isValid || submitting}
               className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-primary-600/20 transition-all hover:bg-primary-700 hover:shadow-lg hover:shadow-primary-600/25 active:scale-[0.98] cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed disabled:shadow-none"
             >
               {submitting ? (

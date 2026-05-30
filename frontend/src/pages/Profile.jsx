@@ -5,8 +5,12 @@
  * • Personal Info section: display name & email, inline edit for full_name
  * • Change Password section: old_password, new_password, confirm_new_password
  * • Success/error toast notifications
+ *
+ * Forms use react-hook-form + Zod validation schemas.
  */
 import { useState, useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import {
   User,
   Mail,
@@ -27,6 +31,10 @@ import { useToast } from "../store/ToastContext";
 import { updateProfile, changePassword } from "../services/userService";
 import { getSummary } from "../services/analyticsService";
 import { getRecords } from "../services/recordService";
+import {
+  profileNameSchema,
+  changePasswordSchema,
+} from "../utils/validationSchemas";
 
 /* ── Summary stat card ───────────────────────────────────────────────── */
 function StatCard({ icon: Icon, label, value, color, bgFrom, bgTo }) {
@@ -63,19 +71,24 @@ export default function Profile() {
 
   // ── Personal info editing ───────────────────────────────────────────
   const [editing, setEditing] = useState(false);
-  const [editName, setEditName] = useState(user?.full_name || "");
   const [savingProfile, setSavingProfile] = useState(false);
 
-  // ── Password change ─────────────────────────────────────────────────
-  const [pwForm, setPwForm] = useState({
-    old_password: "",
-    new_password: "",
-    confirm_new_password: "",
+  const nameForm = useForm({
+    resolver: zodResolver(profileNameSchema),
+    defaultValues: { full_name: user?.full_name || "" },
+    mode: "onBlur",
   });
+
+  // ── Password change ─────────────────────────────────────────────────
   const [savingPassword, setSavingPassword] = useState(false);
   const [showOld, setShowOld] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+
+  const pwForm = useForm({
+    resolver: zodResolver(changePasswordSchema),
+    mode: "onBlur",
+  });
 
   // ── Toast ─────────────────────────────────────────────────────────────
   const { addToast } = useToast();
@@ -103,25 +116,21 @@ export default function Profile() {
     load();
   }, []);
 
-  // Sync editName when user changes
+  // Sync nameForm when user changes
   useEffect(() => {
-    if (user?.full_name) setEditName(user.full_name);
+    if (user?.full_name) nameForm.reset({ full_name: user.full_name });
   }, [user?.full_name]);
 
   // ── Handle profile update ───────────────────────────────────────────
-  const handleSaveProfile = async () => {
-    if (!editName.trim()) {
-      addToast({ message: "Name cannot be empty.", type: "error" });
-      return;
-    }
-    if (editName.trim() === user?.full_name) {
+  const onNameSubmit = async (data) => {
+    if (data.full_name.trim() === user?.full_name) {
       setEditing(false);
       return;
     }
 
     setSavingProfile(true);
     try {
-      const updated = await updateProfile({ full_name: editName.trim() });
+      const updated = await updateProfile({ full_name: data.full_name.trim() });
       // Update auth context with new user data
       dispatch({
         type: "LOGIN",
@@ -141,41 +150,19 @@ export default function Profile() {
   };
 
   const cancelEdit = () => {
-    setEditName(user?.full_name || "");
+    nameForm.reset({ full_name: user?.full_name || "" });
     setEditing(false);
   };
 
   // ── Handle password change ──────────────────────────────────────
-  const handleChangePassword = async (e) => {
-    e.preventDefault();
-
-    if (!pwForm.old_password) {
-      addToast({ message: "Current password is required.", type: "error" });
-      return;
-    }
-    if (!pwForm.new_password) {
-      addToast({ message: "New password is required.", type: "error" });
-      return;
-    }
-    if (pwForm.new_password.length < 6) {
-      addToast({
-        message: "New password must be at least 6 characters.",
-        type: "error",
-      });
-      return;
-    }
-    if (pwForm.new_password !== pwForm.confirm_new_password) {
-      addToast({ message: "New passwords do not match.", type: "error" });
-      return;
-    }
-
+  const onPasswordSubmit = async (data) => {
     setSavingPassword(true);
     try {
       await changePassword({
-        old_password: pwForm.old_password,
-        new_password: pwForm.new_password,
+        old_password: data.old_password,
+        new_password: data.new_password,
       });
-      setPwForm({ old_password: "", new_password: "", confirm_new_password: "" });
+      pwForm.reset();
       setShowOld(false);
       setShowNew(false);
       setShowConfirm(false);
@@ -280,39 +267,45 @@ export default function Profile() {
         {/* Content */}
         <div className="p-6 space-y-5">
           {/* Full Name */}
-          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6">
-            <label className="text-sm font-medium text-gray-500 sm:w-32 flex-shrink-0">
+          <div className="flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-6">
+            <label className="text-sm font-medium text-gray-500 sm:w-32 flex-shrink-0 sm:pt-2.5">
               Full Name
             </label>
             {editing ? (
-              <div className="flex items-center gap-2 flex-1">
-                <input
-                  type="text"
-                  value={editName}
-                  onChange={(e) => setEditName(e.target.value)}
-                  autoFocus
-                  className="flex-1 px-3.5 py-2.5 rounded-xl border border-gray-300 bg-gray-50/50 text-sm text-gray-900 outline-none transition-all focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 focus:bg-white"
-                />
-                <button
-                  onClick={handleSaveProfile}
-                  disabled={savingProfile}
-                  className="p-2 rounded-lg text-emerald-600 hover:bg-emerald-50 transition-colors cursor-pointer disabled:opacity-50"
-                  aria-label="Save name"
-                >
-                  {savingProfile ? (
-                    <Loader2 size={18} className="animate-spin" />
-                  ) : (
-                    <Check size={18} />
-                  )}
-                </button>
-                <button
-                  onClick={cancelEdit}
-                  disabled={savingProfile}
-                  className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer disabled:opacity-50"
-                  aria-label="Cancel"
-                >
-                  <X size={18} />
-                </button>
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    {...nameForm.register("full_name")}
+                    autoFocus
+                    className="flex-1 px-3.5 py-2.5 rounded-xl border border-gray-300 bg-gray-50/50 text-sm text-gray-900 outline-none transition-all focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 focus:bg-white"
+                  />
+                  <button
+                    onClick={nameForm.handleSubmit(onNameSubmit)}
+                    disabled={savingProfile}
+                    className="p-2 rounded-lg text-emerald-600 hover:bg-emerald-50 transition-colors cursor-pointer disabled:opacity-50"
+                    aria-label="Save name"
+                  >
+                    {savingProfile ? (
+                      <Loader2 size={18} className="animate-spin" />
+                    ) : (
+                      <Check size={18} />
+                    )}
+                  </button>
+                  <button
+                    onClick={cancelEdit}
+                    disabled={savingProfile}
+                    className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer disabled:opacity-50"
+                    aria-label="Cancel"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+                {nameForm.formState.errors.full_name && (
+                  <p className="text-xs text-red-500 mt-1">
+                    {nameForm.formState.errors.full_name.message}
+                  </p>
+                )}
               </div>
             ) : (
               <p className="text-sm text-gray-900 font-medium">
@@ -369,7 +362,7 @@ export default function Profile() {
         </div>
 
         {/* Form */}
-        <form onSubmit={handleChangePassword} className="p-6 space-y-5">
+        <form onSubmit={pwForm.handleSubmit(onPasswordSubmit)} className="p-6 space-y-5">
           {/* Current Password */}
           <div className="space-y-1.5">
             <label
@@ -382,10 +375,7 @@ export default function Profile() {
               <input
                 id="old-password"
                 type={showOld ? "text" : "password"}
-                value={pwForm.old_password}
-                onChange={(e) =>
-                  setPwForm((p) => ({ ...p, old_password: e.target.value }))
-                }
+                {...pwForm.register("old_password")}
                 placeholder="Enter current password"
                 className="w-full px-3.5 py-2.5 pr-10 rounded-xl border border-gray-300 bg-gray-50/50 text-sm text-gray-900 placeholder-gray-400 outline-none transition-all focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 focus:bg-white"
               />
@@ -398,6 +388,11 @@ export default function Profile() {
                 {showOld ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             </div>
+            {pwForm.formState.errors.old_password && (
+              <p className="text-xs text-red-500 mt-1">
+                {pwForm.formState.errors.old_password.message}
+              </p>
+            )}
           </div>
 
           {/* New Password */}
@@ -412,10 +407,7 @@ export default function Profile() {
               <input
                 id="new-password"
                 type={showNew ? "text" : "password"}
-                value={pwForm.new_password}
-                onChange={(e) =>
-                  setPwForm((p) => ({ ...p, new_password: e.target.value }))
-                }
+                {...pwForm.register("new_password")}
                 placeholder="At least 6 characters"
                 className="w-full px-3.5 py-2.5 pr-10 rounded-xl border border-gray-300 bg-gray-50/50 text-sm text-gray-900 placeholder-gray-400 outline-none transition-all focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 focus:bg-white"
               />
@@ -428,6 +420,11 @@ export default function Profile() {
                 {showNew ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             </div>
+            {pwForm.formState.errors.new_password && (
+              <p className="text-xs text-red-500 mt-1">
+                {pwForm.formState.errors.new_password.message}
+              </p>
+            )}
           </div>
 
           {/* Confirm New Password */}
@@ -442,13 +439,7 @@ export default function Profile() {
               <input
                 id="confirm-password"
                 type={showConfirm ? "text" : "password"}
-                value={pwForm.confirm_new_password}
-                onChange={(e) =>
-                  setPwForm((p) => ({
-                    ...p,
-                    confirm_new_password: e.target.value,
-                  }))
-                }
+                {...pwForm.register("confirm_new_password")}
                 placeholder="Re-enter new password"
                 className="w-full px-3.5 py-2.5 pr-10 rounded-xl border border-gray-300 bg-gray-50/50 text-sm text-gray-900 placeholder-gray-400 outline-none transition-all focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 focus:bg-white"
               />
@@ -461,20 +452,18 @@ export default function Profile() {
                 {showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             </div>
-            {/* Mismatch indicator */}
-            {pwForm.confirm_new_password &&
-              pwForm.new_password !== pwForm.confirm_new_password && (
-                <p className="text-xs text-red-500 mt-1">
-                  Passwords do not match
-                </p>
-              )}
+            {pwForm.formState.errors.confirm_new_password && (
+              <p className="text-xs text-red-500 mt-1">
+                {pwForm.formState.errors.confirm_new_password.message}
+              </p>
+            )}
           </div>
 
           {/* Submit */}
           <div className="flex justify-end pt-2">
             <button
               type="submit"
-              disabled={savingPassword}
+              disabled={!pwForm.formState.isValid || savingPassword}
               className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 shadow-md shadow-primary-500/20 transition-all cursor-pointer disabled:opacity-60"
             >
               {savingPassword && <Loader2 size={16} className="animate-spin" />}

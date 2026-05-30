@@ -1,24 +1,13 @@
 import { useState } from "react";
 import { Link, useNavigate, Navigate } from "react-router-dom";
 import { LogIn, Loader2, Mail, Lock } from "lucide-react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "../store/AuthContext";
 import { useToast } from "../store/ToastContext";
+import { loginSchema } from "../utils/validationSchemas";
 import { login as loginApi } from "../services/authService";
 import api from "../services/api";
-
-// ── Validation helpers ─────────────────────────────────────────────────────
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-function validate(form) {
-  const errors = {};
-  if (!form.email.trim()) errors.email = "Email is required";
-  else if (!EMAIL_RE.test(form.email)) errors.email = "Enter a valid email address";
-
-  if (!form.password) errors.password = "Password is required";
-  else if (form.password.length < 8) errors.password = "Password must be at least 8 characters";
-
-  return errors;
-}
 
 // ── Component ──────────────────────────────────────────────────────────────
 export default function Login() {
@@ -26,50 +15,30 @@ export default function Login() {
   const { login, isAuthenticated, loading: authLoading } = useAuth();
   const { addToast } = useToast();
 
-  const [form, setForm] = useState({ email: "", password: "" });
-  const [fieldErrors, setFieldErrors] = useState({});
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isValid },
+  } = useForm({
+    resolver: zodResolver(loginSchema),
+    mode: "onBlur",
+    defaultValues: { email: "", password: "" },
+  });
+
   const [apiError, setApiError] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [touched, setTouched] = useState({});
 
   // If already authenticated, redirect to dashboard
   if (!authLoading && isAuthenticated) {
     return <Navigate to="/" replace />;
   }
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    const next = { ...form, [name]: value };
-    setForm(next);
-
-    // Live-clear field error once the user starts fixing it
-    if (touched[name]) {
-      const errs = validate(next);
-      setFieldErrors((prev) => ({ ...prev, [name]: errs[name] || "" }));
-    }
-  };
-
-  const handleBlur = (e) => {
-    const { name } = e.target;
-    setTouched((prev) => ({ ...prev, [name]: true }));
-    const errs = validate(form);
-    setFieldErrors((prev) => ({ ...prev, [name]: errs[name] || "" }));
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const onSubmit = async (data) => {
     setApiError("");
-
-    // Run full validation
-    const errs = validate(form);
-    setFieldErrors(errs);
-    setTouched({ email: true, password: true });
-    if (Object.keys(errs).length) return;
-
     setSubmitting(true);
     try {
       // 1. Get token from backend
-      const { access_token } = await loginApi(form);
+      const { access_token } = await loginApi(data);
 
       // 2. Fetch user profile with the new token
       localStorage.setItem("access_token", access_token);
@@ -96,7 +65,7 @@ export default function Login() {
   const inputClass = (field) =>
     `mt-1 block w-full rounded-lg border px-3 py-2.5 text-sm shadow-sm transition-colors
      focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:border-primary-500
-     ${fieldErrors[field] ? "border-red-400 bg-red-50/40" : "border-gray-300 bg-white"}`;
+     ${errors[field] ? "border-red-400 bg-red-50/40" : "border-gray-300 bg-white"}`;
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-primary-50 via-white to-indigo-50 px-4">
@@ -129,7 +98,7 @@ export default function Login() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-5" noValidate>
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5" noValidate>
             {/* Email */}
             <div>
               <label htmlFor="login-email" className="mb-1 block text-sm font-medium text-gray-700">
@@ -141,18 +110,15 @@ export default function Login() {
                 </span>
                 <input
                   id="login-email"
-                  name="email"
                   type="email"
                   autoComplete="email"
-                  value={form.email}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
+                  {...register("email")}
                   className={`${inputClass("email")} pl-9`}
                   placeholder="you@example.com"
                 />
               </div>
-              {fieldErrors.email && (
-                <p className="mt-1.5 text-xs text-red-600 animate-[fadeUp_0.2s_ease-out]">{fieldErrors.email}</p>
+              {errors.email && (
+                <p className="mt-1.5 text-xs text-red-600 animate-[fadeUp_0.2s_ease-out]">{errors.email.message}</p>
               )}
             </div>
 
@@ -167,25 +133,22 @@ export default function Login() {
                 </span>
                 <input
                   id="login-password"
-                  name="password"
                   type="password"
                   autoComplete="current-password"
-                  value={form.password}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
+                  {...register("password")}
                   className={`${inputClass("password")} pl-9`}
                   placeholder="••••••••"
                 />
               </div>
-              {fieldErrors.password && (
-                <p className="mt-1.5 text-xs text-red-600 animate-[fadeUp_0.2s_ease-out]">{fieldErrors.password}</p>
+              {errors.password && (
+                <p className="mt-1.5 text-xs text-red-600 animate-[fadeUp_0.2s_ease-out]">{errors.password.message}</p>
               )}
             </div>
 
             {/* Submit */}
             <button
               type="submit"
-              disabled={submitting}
+              disabled={!isValid || submitting}
               className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-primary-600/20 transition-all hover:bg-primary-700 hover:shadow-lg hover:shadow-primary-600/25 active:scale-[0.98] cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed disabled:shadow-none"
             >
               {submitting ? (

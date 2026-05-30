@@ -11,6 +11,8 @@
  * On submit, POSTs via recordService, then closes and notifies the parent.
  */
 import { useState, useEffect, useRef, useMemo } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import {
   X,
   Loader2,
@@ -22,6 +24,7 @@ import {
 } from "lucide-react";
 import { createRecord } from "../services/recordService";
 import { getCompanies } from "../services/companyService";
+import { addRecordSchema } from "../utils/validationSchemas";
 
 const ACADEMIC_YEARS = ["2022-23", "2023-24", "2024-25"];
 const STATUSES = ["pending", "selected", "rejected"];
@@ -39,13 +42,25 @@ const STATUS_DOT = {
 };
 
 export default function AddRecordModal({ open, onClose, onCreated }) {
-  const [form, setForm] = useState({
-    company_id: "",
-    role_applied: "",
-    academic_year: ACADEMIC_YEARS[ACADEMIC_YEARS.length - 1],
-    ctc_offered: "",
-    status: "pending",
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setValue,
+    watch,
+    formState: { errors, isValid },
+  } = useForm({
+    resolver: zodResolver(addRecordSchema),
+    mode: "onBlur",
+    defaultValues: {
+      company_id: "",
+      role_applied: "",
+      academic_year: ACADEMIC_YEARS[ACADEMIC_YEARS.length - 1],
+      ctc_offered: "",
+      status: "pending",
+    },
   });
+
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
@@ -56,6 +71,10 @@ export default function AddRecordModal({ open, onClose, onCreated }) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
   const searchRef = useRef(null);
+
+  // Watched values for rendering
+  const watchedCompanyId = watch("company_id");
+  const watchedStatus = watch("status");
 
   // Fetch companies when modal opens
   useEffect(() => {
@@ -97,61 +116,34 @@ export default function AddRecordModal({ open, onClose, onCreated }) {
 
   // Selected company name
   const selectedCompany = useMemo(
-    () => companies.find((c) => c.id === Number(form.company_id)),
-    [companies, form.company_id]
+    () => companies.find((c) => c.id === Number(watchedCompanyId)),
+    [companies, watchedCompanyId]
   );
 
+  // Hooks are called above — safe to bail out now.
   if (!open) return null;
 
-  const handleChange = (e) => {
-    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
-    setError("");
-  };
-
   const selectCompany = (company) => {
-    setForm((prev) => ({ ...prev, company_id: company.id }));
+    setValue("company_id", company.id, { shouldValidate: true });
     setCompanySearch("");
     setDropdownOpen(false);
     setError("");
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    // ── Validation ─────────────────────────────────────────────────────
-    if (!form.company_id) {
-      setError("Please select a company.");
-      return;
-    }
-    if (!form.role_applied.trim()) {
-      setError("Role applied is required.");
-      return;
-    }
-    if (!form.academic_year) {
-      setError("Academic year is required.");
-      return;
-    }
-
+  const onSubmit = async (data) => {
     setSubmitting(true);
     setError("");
 
     try {
       const payload = {
-        company_id: Number(form.company_id),
-        role_applied: form.role_applied.trim(),
-        academic_year: form.academic_year,
-        ctc_offered: form.ctc_offered ? Number(form.ctc_offered) : null,
-        status: form.status,
+        company_id: Number(data.company_id),
+        role_applied: data.role_applied.trim(),
+        academic_year: data.academic_year,
+        ctc_offered: data.ctc_offered ? Number(data.ctc_offered) : null,
+        status: data.status,
       };
       await createRecord(payload);
-      // Reset form
-      setForm({
-        company_id: "",
-        role_applied: "",
-        academic_year: ACADEMIC_YEARS[ACADEMIC_YEARS.length - 1],
-        ctc_offered: "",
-        status: "pending",
-      });
+      reset();
       onCreated();
       onClose();
     } catch (err) {
@@ -195,8 +187,8 @@ export default function AddRecordModal({ open, onClose, onCreated }) {
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-5">
-          {/* Error alert */}
+        <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-5">
+          {/* API Error alert */}
           {error && (
             <div className="flex items-start gap-2.5 px-4 py-3 rounded-xl bg-red-50 border border-red-100 text-sm text-red-700 animate-fadeIn">
               <AlertCircle size={16} className="mt-0.5 flex-shrink-0" />
@@ -259,7 +251,7 @@ export default function AddRecordModal({ open, onClose, onCreated }) {
                       </p>
                     ) : (
                       filteredCompanies.map((c) => {
-                        const isActive = Number(form.company_id) === c.id;
+                        const isActive = Number(watchedCompanyId) === c.id;
                         return (
                           <button
                             key={c.id}
@@ -284,6 +276,9 @@ export default function AddRecordModal({ open, onClose, onCreated }) {
                 </div>
               )}
             </div>
+            {errors.company_id && (
+              <p className="text-sm text-red-600">{errors.company_id.message}</p>
+            )}
           </div>
 
           {/* Role Applied */}
@@ -293,13 +288,14 @@ export default function AddRecordModal({ open, onClose, onCreated }) {
             </label>
             <input
               id="record-role"
-              name="role_applied"
               type="text"
-              value={form.role_applied}
-              onChange={handleChange}
+              {...register("role_applied")}
               placeholder="e.g. SDE Intern"
               className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 bg-gray-50/50 text-sm text-gray-900 placeholder-gray-400 outline-none transition-all focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 focus:bg-white"
             />
+            {errors.role_applied && (
+              <p className="text-sm text-red-600">{errors.role_applied.message}</p>
+            )}
           </div>
 
           {/* Academic Year & CTC — side by side */}
@@ -311,15 +307,16 @@ export default function AddRecordModal({ open, onClose, onCreated }) {
               </label>
               <select
                 id="record-year"
-                name="academic_year"
-                value={form.academic_year}
-                onChange={handleChange}
+                {...register("academic_year")}
                 className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 bg-gray-50/50 text-sm text-gray-900 outline-none transition-all focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 focus:bg-white appearance-none cursor-pointer"
               >
                 {ACADEMIC_YEARS.map((yr) => (
                   <option key={yr} value={yr}>{yr}</option>
                 ))}
               </select>
+              {errors.academic_year && (
+                <p className="text-sm text-red-600">{errors.academic_year.message}</p>
+              )}
             </div>
 
             {/* CTC Offered */}
@@ -329,15 +326,16 @@ export default function AddRecordModal({ open, onClose, onCreated }) {
               </label>
               <input
                 id="record-ctc"
-                name="ctc_offered"
                 type="number"
                 step="0.01"
                 min="0"
-                value={form.ctc_offered}
-                onChange={handleChange}
+                {...register("ctc_offered")}
                 placeholder="e.g. 12.5"
                 className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 bg-gray-50/50 text-sm text-gray-900 placeholder-gray-400 outline-none transition-all focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 focus:bg-white"
               />
+              {errors.ctc_offered && (
+                <p className="text-sm text-red-600">{errors.ctc_offered.message}</p>
+              )}
             </div>
           </div>
 
@@ -348,13 +346,13 @@ export default function AddRecordModal({ open, onClose, onCreated }) {
             </label>
             <div className="flex gap-2">
               {STATUSES.map((s) => {
-                const active = form.status === s;
+                const active = watchedStatus === s;
                 return (
                   <button
                     key={s}
                     type="button"
                     onClick={() => {
-                      setForm((prev) => ({ ...prev, status: s }));
+                      setValue("status", s, { shouldValidate: true });
                       setError("");
                     }}
                     className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-medium transition-all cursor-pointer border ${
@@ -369,6 +367,9 @@ export default function AddRecordModal({ open, onClose, onCreated }) {
                 );
               })}
             </div>
+            {errors.status && (
+              <p className="text-sm text-red-600">{errors.status.message}</p>
+            )}
           </div>
 
           {/* Actions */}
@@ -383,7 +384,7 @@ export default function AddRecordModal({ open, onClose, onCreated }) {
             </button>
             <button
               type="submit"
-              disabled={submitting}
+              disabled={!isValid || submitting}
               className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 shadow-md shadow-primary-500/20 transition-all cursor-pointer disabled:opacity-60"
             >
               {submitting && <Loader2 size={16} className="animate-spin" />}

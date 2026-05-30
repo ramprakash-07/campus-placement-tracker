@@ -9,6 +9,8 @@
  * On submit, POSTs via roundService, then closes and notifies the parent.
  */
 import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import {
   X,
   Loader2,
@@ -16,6 +18,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { createRound } from "../services/roundService";
+import { addRoundSchema } from "../utils/validationSchemas";
 
 const ROUND_TYPES = [
   { value: "aptitude", label: "Aptitude" },
@@ -38,45 +41,44 @@ const OUTCOME_DOT = {
 };
 
 export default function AddRoundModal({ open, onClose, onCreated, placementRecordId }) {
-  const [form, setForm] = useState({
-    round_type: "technical",
-    outcome: "pending",
-    questions_asked: "",
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setValue,
+    watch,
+    formState: { errors, isValid },
+  } = useForm({
+    resolver: zodResolver(addRoundSchema),
+    mode: "onChange",
+    defaultValues: {
+      round_type: "technical",
+      outcome: "pending",
+      questions_asked: "",
+    },
   });
+
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
+  const currentOutcome = watch("outcome");
+
+  // Hooks are called above — safe to bail out now.
   if (!open) return null;
 
-  const handleChange = (e) => {
-    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
-    setError("");
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    if (!form.round_type) {
-      setError("Round type is required.");
-      return;
-    }
-
+  const onSubmit = async (data) => {
     setSubmitting(true);
     setError("");
 
     try {
       const payload = {
         placement_record_id: placementRecordId,
-        round_type: form.round_type,
-        outcome: form.outcome,
-        questions_asked: form.questions_asked.trim() || null,
+        round_type: data.round_type,
+        outcome: data.outcome,
+        questions_asked: data.questions_asked?.trim() || null,
       };
       await createRound(payload);
-      setForm({
-        round_type: "technical",
-        outcome: "pending",
-        questions_asked: "",
-      });
+      reset();
       onCreated();
       onClose();
     } catch (err) {
@@ -120,8 +122,8 @@ export default function AddRoundModal({ open, onClose, onCreated, placementRecor
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-5">
-          {/* Error alert */}
+        <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-5">
+          {/* API Error alert */}
           {error && (
             <div className="flex items-start gap-2.5 px-4 py-3 rounded-xl bg-red-50 border border-red-100 text-sm text-red-700 animate-fadeIn">
               <AlertCircle size={16} className="mt-0.5 flex-shrink-0" />
@@ -139,9 +141,7 @@ export default function AddRoundModal({ open, onClose, onCreated, placementRecor
             </label>
             <select
               id="round-type"
-              name="round_type"
-              value={form.round_type}
-              onChange={handleChange}
+              {...register("round_type")}
               className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 bg-gray-50/50 text-sm text-gray-900 outline-none transition-all focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 focus:bg-white appearance-none cursor-pointer"
             >
               {ROUND_TYPES.map((rt) => (
@@ -150,6 +150,9 @@ export default function AddRoundModal({ open, onClose, onCreated, placementRecor
                 </option>
               ))}
             </select>
+            {errors.round_type && (
+              <p className="text-sm text-red-600">{errors.round_type.message}</p>
+            )}
           </div>
 
           {/* Outcome */}
@@ -159,13 +162,13 @@ export default function AddRoundModal({ open, onClose, onCreated, placementRecor
             </label>
             <div className="flex gap-2">
               {OUTCOMES.map((o) => {
-                const active = form.outcome === o.value;
+                const active = currentOutcome === o.value;
                 return (
                   <button
                     key={o.value}
                     type="button"
                     onClick={() => {
-                      setForm((prev) => ({ ...prev, outcome: o.value }));
+                      setValue("outcome", o.value, { shouldValidate: true });
                       setError("");
                     }}
                     className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-medium transition-all cursor-pointer border ${
@@ -182,6 +185,9 @@ export default function AddRoundModal({ open, onClose, onCreated, placementRecor
                 );
               })}
             </div>
+            {errors.outcome && (
+              <p className="text-sm text-red-600">{errors.outcome.message}</p>
+            )}
           </div>
 
           {/* Questions Asked */}
@@ -194,9 +200,7 @@ export default function AddRoundModal({ open, onClose, onCreated, placementRecor
             </label>
             <textarea
               id="round-questions"
-              name="questions_asked"
-              value={form.questions_asked}
-              onChange={handleChange}
+              {...register("questions_asked")}
               rows={4}
               placeholder="e.g. Explain polymorphism, reverse a linked list, tell me about yourself…"
               className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 bg-gray-50/50 text-sm text-gray-900 placeholder-gray-400 outline-none transition-all focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 focus:bg-white resize-none"
@@ -215,7 +219,7 @@ export default function AddRoundModal({ open, onClose, onCreated, placementRecor
             </button>
             <button
               type="submit"
-              disabled={submitting}
+              disabled={!isValid || submitting}
               className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 shadow-md shadow-primary-500/20 transition-all cursor-pointer disabled:opacity-60"
             >
               {submitting && <Loader2 size={16} className="animate-spin" />}
