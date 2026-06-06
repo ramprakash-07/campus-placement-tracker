@@ -53,3 +53,17 @@ class PlacementRecordOut(BaseModel):
     rounds: List[RoundOut] = []
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class PlacementRecordAnonymizedOut(BaseModel):
+    """Anonymized placement record — no user info."""
+    id: int
+    academic_year: str
+    role_applied: str
+    ctc_offered: Optional[Decimal] = None
+    status: PlacementStatus
+    created_at: datetime
+    rounds: List[RoundOut] = []
+
+    model_config = ConfigDict(from_attributes=True)
+

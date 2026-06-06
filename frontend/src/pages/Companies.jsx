@@ -9,7 +9,7 @@
  * • API error handling with retry option
  */
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, Link } from "react-router-dom";
 import {
   Building2,
   Search,
@@ -192,9 +192,10 @@ export default function Companies() {
         <>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {companies.map((company) => (
-              <div
+              <Link
                 key={company.id}
-                className="group relative rounded-2xl border border-gray-200/60 bg-white p-5 shadow-sm hover:shadow-md hover:border-primary-200/60 transition-all duration-200"
+                to={`/companies/${company.id}`}
+                className="group relative rounded-2xl border border-gray-200/60 bg-white p-5 shadow-sm hover:shadow-md hover:border-primary-200/60 transition-all duration-200 block"
               >
                 {/* Header row */}
                 <div className="flex items-start gap-3">
@@ -234,7 +235,7 @@ export default function Companies() {
                     year: "numeric",
                   })}
                 </p>
-              </div>
+              </Link>
             ))}
           </div>
 

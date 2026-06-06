@@ -74,6 +74,20 @@ def get_placement_record(
     )
 
 
+def get_company_placement_records(
+    db: Session,
+    company_id: int,
+) -> list[PlacementRecord]:
+    """Return all placement records for a given company (across all users)."""
+    return (
+        db.query(PlacementRecord)
+        .options(joinedload(PlacementRecord.rounds))
+        .filter(PlacementRecord.company_id == company_id)
+        .order_by(PlacementRecord.created_at.desc())
+        .all()
+    )
+
+
 # ---------------------------------------------------------------------------
 # CREATE
 # ---------------------------------------------------------------------------

@@ -53,3 +53,13 @@ export const updateCompany = async (id, payload) => {
 export const deleteCompany = async (id) => {
   await api.delete(`/companies/${id}`);
 };
+
+/**
+ * GET /companies/:id/records
+ * @param {number} companyId
+ * @returns {object[]} anonymized placement records
+ */
+export const getCompanyRecords = async (companyId) => {
+  const { data } = await api.get(`/companies/${companyId}/records`);
+  return data;
+};

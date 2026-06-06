@@ -7,6 +7,7 @@ import Dashboard            from "./pages/Dashboard";
 import Login                from "./pages/Login";
 import Register             from "./pages/Register";
 import Companies            from "./pages/Companies";
+import CompanyDetail        from "./pages/CompanyDetail";
 import Records              from "./pages/Records";
 import RecordDetail         from "./pages/RecordDetail";
 import Profile              from "./pages/Profile";
@@ -49,6 +50,7 @@ export default function App() {
         >
           <Route index            element={<Dashboard />} />
           <Route path="companies" element={<Companies />} />
+          <Route path="companies/:id" element={<CompanyDetail />} />
           <Route path="records"   element={<Records />} />
           <Route path="records/:id" element={<RecordDetail />} />
           <Route path="analytics" element={<Analytics />} />

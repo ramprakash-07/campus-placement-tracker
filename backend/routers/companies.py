@@ -21,9 +21,11 @@ from crud.company import (
     get_company_by_name,
     update_company,
 )
+from crud.placement_record import get_company_placement_records
 from db.database import get_db
 from models.user import User
 from schemas.company import CompanyCreate, CompanyOut, CompanyUpdate
+from schemas.placement_record import PlacementRecordAnonymizedOut
 
 router = APIRouter(
     prefix="/companies",
@@ -70,6 +72,21 @@ def read_company(company_id: int, db: Session = Depends(get_db)):
             detail=f"Company with id {company_id} not found",
         )
     return company
+
+
+# ---------------------------------------------------------------------------
+# GET /companies/{id}/records — anonymized records for a company
+# ---------------------------------------------------------------------------
+@router.get("/{company_id}/records", response_model=list[PlacementRecordAnonymizedOut])
+def list_company_records(company_id: int, db: Session = Depends(get_db)):
+    """Return all anonymized placement records for a company (across all users)."""
+    company = get_company(db, company_id)
+    if not company:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Company with id {company_id} not found",
+        )
+    return get_company_placement_records(db, company_id)
 
 
 # ---------------------------------------------------------------------------
