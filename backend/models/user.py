@@ -15,6 +15,7 @@ class UserRole(enum.Enum):
     """Allowed user roles on the platform."""
     STUDENT = "student"
     COORDINATOR = "coordinator"
+    ADMIN = "admin"
 
 
 class User(Base):

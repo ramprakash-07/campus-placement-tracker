@@ -7,3 +7,4 @@ from models.user import User  # noqa: F401
 from models.company import Company  # noqa: F401
 from models.placement_record import PlacementRecord  # noqa: F401
 from models.round import Round  # noqa: F401
+from models.password_reset_otp import PasswordResetOTP  # noqa: F401

@@ -68,3 +68,4 @@ coverage/
 htmlcov/
 .coverage
 .coverage.*
+logs/

@@ -3,12 +3,18 @@ Campus Placement Tracker — FastAPI application entry-point.
 """
 
 import os
+import time
+import logging
+from logging.handlers import TimedRotatingFileHandler
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 
 from core.config import settings  # validates env vars on import
 from routers.auth import router as auth_router
@@ -18,6 +24,34 @@ from routers.placement_records import router as placement_records_router
 from routers.rounds import router as rounds_router
 from routers.users import router as users_router
 from routers.coordinator import router as coordinator_router
+from routers.admin import router as admin_router
+
+
+# ---------------------------------------------------------------------------
+# Request logging setup
+# ---------------------------------------------------------------------------
+_log_dir = os.path.join(os.path.dirname(__file__), "logs")
+os.makedirs(_log_dir, exist_ok=True)
+
+_request_logger = logging.getLogger("request_logger")
+_request_logger.setLevel(logging.INFO)
+_handler = TimedRotatingFileHandler(
+    os.path.join(_log_dir, "app.log"),
+    when="midnight",
+    interval=1,
+    backupCount=7,
+    encoding="utf-8",
+)
+_handler.setFormatter(
+    logging.Formatter("%(asctime)s | %(message)s", datefmt="%Y-%m-%d %H:%M:%S")
+)
+_request_logger.addHandler(_handler)
+
+
+# ---------------------------------------------------------------------------
+# Rate limiter (slowapi)
+# ---------------------------------------------------------------------------
+limiter = Limiter(key_func=get_remote_address, default_limits=["60/minute"])
 
 
 # ---------------------------------------------------------------------------
@@ -26,11 +60,8 @@ from routers.coordinator import router as coordinator_router
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Load configuration and perform startup checks."""
-    # Config is already validated by the module-level import above.
-    # Any additional startup work (e.g. DB migrations, cache warm-up) goes here.
     print(f"[START] {settings.ALGORITHM} | DB -> {settings.DATABASE_URL[:30]}...")
     yield
-    # Shutdown cleanup (if any) goes here.
     print("[STOP] Shutting down...")
 
 
@@ -44,6 +75,10 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# Attach limiter state and custom 429 handler
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
 
 # ---------------------------------------------------------------------------
 # CORS middleware — origins driven by FRONTEND_URL env var
@@ -56,6 +91,25 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+# ---------------------------------------------------------------------------
+# Request logging middleware
+# ---------------------------------------------------------------------------
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    """Log every request: method, path, status, response time."""
+    start = time.perf_counter()
+    response = await call_next(request)
+    elapsed_ms = (time.perf_counter() - start) * 1000
+    _request_logger.info(
+        "%s %s → %d (%.1fms)",
+        request.method,
+        request.url.path,
+        response.status_code,
+        elapsed_ms,
+    )
+    return response
 
 
 # ---------------------------------------------------------------------------
@@ -94,6 +148,7 @@ app.include_router(placement_records_router)
 app.include_router(rounds_router)
 app.include_router(analytics_router)
 app.include_router(coordinator_router)
+app.include_router(admin_router)
 
 
 # ---------------------------------------------------------------------------

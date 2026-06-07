@@ -5,9 +5,12 @@ All routes require a valid Bearer JWT (``get_current_user`` dependency).
 Ownership checks ensure a user can only access their own records.
 """
 
+import csv
+import io
 import math
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from core.dependencies import get_current_user
@@ -59,6 +62,64 @@ def list_placement_records(
         "page": page,
         "pages": math.ceil(total / limit) if total else 1,
     }
+
+
+# ---------------------------------------------------------------------------
+# GET /placement-records/export — export all records as CSV
+# ---------------------------------------------------------------------------
+@router.get("/export")
+def export_placement_records(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Export the current user's placement records (with rounds) as a CSV file.
+
+    Columns: Company, Sector, Role, Academic Year, CTC, Status,
+    Round 1 Type, Round 1 Outcome, ..., Round 5 Type, Round 5 Outcome.
+    """
+    records = get_user_placement_records(db, current_user.id)
+
+    # Build CSV in memory
+    output = io.StringIO()
+    writer = csv.writer(output)
+
+    # Header row
+    headers = [
+        "Company", "Sector", "Role Applied", "Academic Year",
+        "CTC Offered", "Status",
+    ]
+    for i in range(1, 6):
+        headers.extend([f"Round {i} Type", f"Round {i} Outcome"])
+    writer.writerow(headers)
+
+    # Data rows
+    for record in records:
+        row = [
+            record.company.name if record.company else "",
+            record.company.sector if record.company else "",
+            record.role_applied,
+            record.academic_year,
+            str(record.ctc_offered) if record.ctc_offered is not None else "",
+            record.status,
+        ]
+        # Sort rounds by round_number and pad up to 5
+        sorted_rounds = sorted(record.rounds, key=lambda r: r.round_number)
+        for i in range(5):
+            if i < len(sorted_rounds):
+                row.extend([sorted_rounds[i].round_type, sorted_rounds[i].outcome])
+            else:
+                row.extend(["", ""])
+        writer.writerow(row)
+
+    output.seek(0)
+    return StreamingResponse(
+        output,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": "attachment; filename=placement_records.csv"
+        },
+    )
 
 
 # ---------------------------------------------------------------------------

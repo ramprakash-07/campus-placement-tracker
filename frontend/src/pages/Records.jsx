@@ -21,8 +21,10 @@ import {
   AlertTriangle,
   X,
   Loader2,
+  Download,
 } from "lucide-react";
 import { getRecords, deleteRecord } from "../services/recordService";
+import { exportRecordsCsv } from "../services/recordService";
 import AddRecordModal from "../components/AddRecordModal";
 import SkeletonRow from "../components/ui/SkeletonRow";
 import EmptyState from "../components/ui/EmptyState";
@@ -181,6 +183,28 @@ export default function Records() {
     }
   };
 
+  // ── Handle CSV export ──────────────────────────────────────────────
+  const [exporting, setExporting] = useState(false);
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      const blob = await exportRecordsCsv();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "placement_records.csv";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      addToast({ message: "CSV exported successfully!", type: "success" });
+    } catch (err) {
+      addToast({ message: "Failed to export CSV.", type: "error" });
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* ── Page header ──────────────────────────────────────────────── */}
@@ -197,13 +221,23 @@ export default function Records() {
           </div>
         </div>
 
-        <button
-          onClick={() => setModalOpen(true)}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 shadow-md shadow-primary-500/20 transition-all cursor-pointer"
-        >
-          <Plus size={18} />
-          Add Record
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleExport}
+            disabled={exporting || records.length === 0}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            {exporting ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+            {exporting ? "Exporting…" : "Export CSV"}
+          </button>
+          <button
+            onClick={() => setModalOpen(true)}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 shadow-md shadow-primary-500/20 transition-all cursor-pointer"
+          >
+            <Plus size={18} />
+            Add Record
+          </button>
+        </div>
       </div>
 
       {/* ── Error state ──────────────────────────────────────────────── */}

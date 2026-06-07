@@ -6,6 +6,7 @@ import CoordinatorRoute     from "./components/CoordinatorRoute";
 import Dashboard            from "./pages/Dashboard";
 import Login                from "./pages/Login";
 import Register             from "./pages/Register";
+import ForgotPassword       from "./pages/ForgotPassword";
 import Companies            from "./pages/Companies";
 import CompanyDetail        from "./pages/CompanyDetail";
 import Records              from "./pages/Records";
@@ -39,6 +40,7 @@ export default function App() {
         {/* ---- Public (no sidebar) ---- */}
         <Route path="/login"    element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
 
         {/* ---- Authenticated (with MainLayout: Sidebar + TopNav) ---- */}
         <Route

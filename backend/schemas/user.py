@@ -49,3 +49,15 @@ class UserOut(BaseModel):
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class ForgotPasswordRequest(BaseModel):
+    """Payload for requesting a password reset OTP."""
+    email: EmailStr
+
+
+class ResetPasswordRequest(BaseModel):
+    """Payload for resetting the password with an OTP."""
+    email: EmailStr
+    otp: str
+    new_password: str

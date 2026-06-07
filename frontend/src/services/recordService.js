@@ -51,3 +51,14 @@ export const updateRecord = async (id, payload) => {
 export const deleteRecord = async (id) => {
   await api.delete(`/placement-records/${id}`);
 };
+
+/**
+ * GET /placement-records/export
+ * @returns {Blob} CSV file as a Blob
+ */
+export const exportRecordsCsv = async () => {
+  const { data } = await api.get("/placement-records/export", {
+    responseType: "blob",
+  });
+  return data;
+};

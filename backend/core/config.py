@@ -31,6 +31,18 @@ class Settings(BaseSettings):
     # --- Coordinator invite code ---------------------------------------------
     COORDINATOR_INVITE_CODE: str = ""
 
+    # --- SMTP / Email --------------------------------------------------------
+    SMTP_HOST: str = "smtp.gmail.com"
+    SMTP_PORT: int = 587
+    SMTP_USER: str = ""
+    SMTP_PASSWORD: str = ""
+    MAIL_FROM: str = ""
+    MAIL_FROM_NAME: str = "Campus Placement Tracker"
+
+    # --- Admin seed -----------------------------------------------------------
+    ADMIN_EMAIL: str = ""
+    ADMIN_PASSWORD: str = ""
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
