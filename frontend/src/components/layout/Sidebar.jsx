@@ -88,8 +88,8 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose
           border-r border-gray-800/60 shadow-xl
           transition-all duration-300 ease-in-out
           ${collapsed ? "w-[72px]" : "w-64"}
-          lg:static lg:translate-x-0
-          ${mobileOpen ? "translate-x-0" : "-translate-x-full"}
+          hidden md:static md:flex md:translate-x-0
+          ${mobileOpen ? "!flex translate-x-0" : "-translate-x-full"}
         `}
       >
         {/* ── Logo / Brand ──────────────────────────────────────────── */}

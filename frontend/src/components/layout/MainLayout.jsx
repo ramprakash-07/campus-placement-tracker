@@ -1,21 +1,23 @@
 /**
- * MainLayout — wraps Sidebar + TopNav + page content via <Outlet />.
+ * MainLayout — wraps Sidebar + TopNav + BottomNav + page content via <Outlet />.
  *
  * Applied to all protected (authenticated) routes.
- * The sidebar can be collapsed on desktop and toggled on mobile.
+ * - Desktop: Sidebar (left) + TopNav (top) + content
+ * - Mobile: TopNav (top) + content + BottomNav (bottom), sidebar hidden
  */
 import { useState } from "react";
 import { Outlet } from "react-router-dom";
-import Sidebar from "./Sidebar";
-import TopNav  from "./TopNav";
+import Sidebar   from "./Sidebar";
+import TopNav    from "./TopNav";
+import BottomNav from "./BottomNav";
 
 export default function MainLayout() {
   const [collapsed, setCollapsed]   = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-50">
-      {/* ── Sidebar ───────────────────────────────────────────────── */}
+    <div className="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-950">
+      {/* ── Sidebar (hidden below md, visible on md+) ──────────────── */}
       <Sidebar
         collapsed={collapsed}
         onToggle={() => setCollapsed(prev => !prev)}
@@ -27,11 +29,14 @@ export default function MainLayout() {
       <div className="flex flex-1 flex-col overflow-hidden">
         <TopNav onMenuClick={() => setMobileOpen(true)} />
 
-        {/* Page content rendered via nested routes */}
-        <main className="flex-1 overflow-y-auto p-4 lg:p-6">
+        {/* Page content — bottom padding on mobile for BottomNav */}
+        <main className="flex-1 overflow-y-auto p-4 lg:p-6 pb-20 md:pb-4 lg:pb-6">
           <Outlet />
         </main>
       </div>
+
+      {/* ── Bottom nav (mobile only) ──────────────────────────────── */}
+      <BottomNav />
     </div>
   );
 }

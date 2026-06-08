@@ -8,9 +8,11 @@
  *  • Logged-in user's name display
  *  • Logout button that calls AuthContext.logout() and redirects to /login
  */
-import { Menu, Bell, LogOut, User } from "lucide-react";
+import { Menu, Bell, LogOut, User, Sun, Moon } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../store/AuthContext";
+import { useTheme } from "../../store/ThemeContext";
+import SearchBar from "./SearchBar";
 
 /**
  * Map pathname → human-readable page title.
@@ -30,6 +32,7 @@ export default function TopNav({ onMenuClick }) {
   const location  = useLocation();
   const navigate  = useNavigate();
   const { user, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
 
   const handleLogout = () => {
     logout();
@@ -37,12 +40,12 @@ export default function TopNav({ onMenuClick }) {
   };
 
   return (
-    <header className="sticky top-0 z-20 flex items-center justify-between bg-white/80 backdrop-blur-md border-b border-gray-200/80 px-4 py-3 lg:px-6">
+    <header className="sticky top-0 z-20 flex items-center justify-between bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200/80 dark:border-gray-800/80 px-4 py-3 lg:px-6">
       {/* ── Left section ──────────────────────────────────────────── */}
       <div className="flex items-center gap-3">
         {/* Mobile hamburger */}
         <button
-          className="lg:hidden p-1.5 -ml-1 rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer"
+          className="md:hidden p-1.5 -ml-1 rounded-lg text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer"
           onClick={onMenuClick}
           aria-label="Open sidebar"
         >
@@ -50,9 +53,14 @@ export default function TopNav({ onMenuClick }) {
         </button>
 
         {/* Page title */}
-        <h1 className="text-lg font-semibold text-gray-800">
+        <h1 className="text-lg font-semibold text-gray-800 dark:text-gray-100">
           {getPageTitle(location.pathname)}
         </h1>
+      </div>
+
+      {/* ── Center: Search ─────────────────────────────────────────── */}
+      <div className="hidden sm:block flex-1 max-w-md mx-4">
+        <SearchBar />
       </div>
 
       {/* ── Right section ─────────────────────────────────────────── */}
@@ -65,15 +73,27 @@ export default function TopNav({ onMenuClick }) {
         >
           <Bell size={20} />
           {/* Notification dot */}
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white" />
+          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white dark:ring-gray-900" />
         </button>
 
-        {/* User info */}
-        <div className="hidden sm:flex items-center gap-2 ml-2 pl-3 border-l border-gray-200">
-          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 shadow-sm">
-            <User size={16} className="text-white" />
+        {/* Dark mode toggle */}
+        <button
+          onClick={toggleTheme}
+          className="p-2 rounded-lg text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer"
+          aria-label="Toggle theme"
+          title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+        >
+          {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
+        </button>
+
+        {/* User info — avatar always visible, name hidden on mobile */}
+        <div className="flex items-center gap-2 ml-2 pl-3 border-l border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 shadow-sm flex-shrink-0">
+            <span className="text-white font-bold text-xs">
+              {(user?.full_name || user?.email || "U").charAt(0).toUpperCase()}
+            </span>
           </div>
-          <span className="text-sm font-medium text-gray-700 max-w-[120px] truncate">
+          <span className="hidden sm:inline text-sm font-medium text-gray-700 dark:text-gray-300 max-w-[120px] truncate">
             {user?.full_name || user?.email || "User"}
           </span>
         </div>
@@ -81,7 +101,7 @@ export default function TopNav({ onMenuClick }) {
         {/* Logout button */}
         <button
           onClick={handleLogout}
-          className="flex items-center gap-1.5 ml-1 px-3 py-1.5 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+          className="flex items-center gap-1.5 ml-1 px-3 py-1.5 rounded-lg text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors cursor-pointer"
           title="Logout"
         >
           <LogOut size={18} />

@@ -303,10 +303,63 @@ export default function Records() {
         />
       )}
 
-      {/* ── Records table ────────────────────────────────────────────── */}
+      {/* ── Records — cards (mobile) + table (desktop) ─────────────── */}
       {!loading && !error && records.length > 0 && (
         <div className="rounded-2xl border border-gray-200/60 bg-white shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
+
+          {/* ── Mobile card stack (below md) ──────────────────────────── */}
+          <div className="md:hidden divide-y divide-gray-100">
+            {records.map((rec) => (
+              <div
+                key={rec.id}
+                onClick={() => navigate(`/records/${rec.id}`)}
+                className="p-4 hover:bg-primary-50/30 transition-colors cursor-pointer"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-gradient-to-br from-primary-50 to-primary-100 flex-shrink-0">
+                      <FileText size={16} className="text-primary-600" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-gray-900 truncate">
+                        {rec.company?.name || `Company #${rec.company_id}`}
+                      </p>
+                      <p className="text-xs text-gray-500 truncate">{rec.role_applied}</p>
+                    </div>
+                  </div>
+                  <StatusBadge status={rec.status} />
+                </div>
+                <div className="flex items-center gap-4 mt-3 text-xs text-gray-500">
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-gray-100 font-medium text-gray-600">
+                    {rec.academic_year}
+                  </span>
+                  <span>
+                    {rec.ctc_offered != null
+                      ? `₹${Number(rec.ctc_offered).toLocaleString("en-IN")} LPA`
+                      : "— CTC"}
+                  </span>
+                  <span>{rec.rounds?.length || 0} rounds</span>
+                </div>
+                <div className="flex items-center gap-1 mt-2 justify-end">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); navigate(`/records/${rec.id}`); }}
+                    className="p-1.5 rounded-lg text-gray-400 hover:text-primary-600 hover:bg-primary-50 transition-colors cursor-pointer"
+                  >
+                    <ExternalLink size={14} />
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setDeleteTarget(rec); }}
+                    className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* ── Desktop table (md+) ──────────────────────────────────── */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full min-w-[700px]">
               <thead>
                 <tr className="bg-gray-50/80 border-b border-gray-100">
@@ -329,7 +382,6 @@ export default function Records() {
                     onClick={() => navigate(`/records/${rec.id}`)}
                     className="group hover:bg-primary-50/30 transition-colors cursor-pointer"
                   >
-                    {/* Company */}
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-2.5">
                         <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-primary-50 to-primary-100 flex-shrink-0">
@@ -340,58 +392,34 @@ export default function Records() {
                         </span>
                       </div>
                     </td>
-
-                    {/* Role */}
-                    <td className="px-5 py-4 text-sm text-gray-700">
-                      {rec.role_applied}
-                    </td>
-
-                    {/* Academic Year */}
+                    <td className="px-5 py-4 text-sm text-gray-700">{rec.role_applied}</td>
                     <td className="px-5 py-4">
                       <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-gray-100 text-xs font-medium text-gray-600">
                         {rec.academic_year}
                       </span>
                     </td>
-
-                    {/* CTC */}
                     <td className="px-5 py-4 text-sm text-gray-700">
                       {rec.ctc_offered != null
                         ? `₹${Number(rec.ctc_offered).toLocaleString("en-IN")} LPA`
                         : <span className="text-gray-400">—</span>}
                     </td>
-
-                    {/* Status */}
-                    <td className="px-5 py-4">
-                      <StatusBadge status={rec.status} />
-                    </td>
-
-                    {/* Rounds count */}
+                    <td className="px-5 py-4"><StatusBadge status={rec.status} /></td>
                     <td className="px-5 py-4">
                       <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-gray-100 text-xs font-semibold text-gray-700">
                         {rec.rounds?.length || 0}
                       </span>
                     </td>
-
-                    {/* Actions */}
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-1">
                         <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(`/records/${rec.id}`);
-                          }}
+                          onClick={(e) => { e.stopPropagation(); navigate(`/records/${rec.id}`); }}
                           className="p-2 rounded-lg text-gray-400 hover:text-primary-600 hover:bg-primary-50 transition-colors cursor-pointer opacity-0 group-hover:opacity-100 focus:opacity-100"
-                          aria-label={`View details for ${rec.company?.name}`}
                         >
                           <ExternalLink size={16} />
                         </button>
                         <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setDeleteTarget(rec);
-                          }}
+                          onClick={(e) => { e.stopPropagation(); setDeleteTarget(rec); }}
                           className="p-2 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer opacity-0 group-hover:opacity-100 focus:opacity-100"
-                          aria-label={`Delete record for ${rec.company?.name}`}
                         >
                           <Trash2 size={16} />
                         </button>
