@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from models.company import Company
 from models.placement_record import PlacementRecord
+from models.activity_log import ActivityLog
 from schemas.placement_record import PlacementRecordCreate, PlacementRecordUpdate
 
 
@@ -109,6 +110,14 @@ def create_placement_record(
     db.add(record)
     db.commit()
     db.refresh(record)
+    # Log activity
+    db.add(ActivityLog(
+        user_id=user_id,
+        action_type="record_added",
+        entity_id=record.id,
+        description=f"Added placement record for {record.role_applied}",
+    ))
+    db.commit()
     # Re-fetch with eager-loading so nested objects are populated
     return get_placement_record(db, record.id)  # type: ignore[return-value]
 
@@ -132,6 +141,14 @@ def update_placement_record(
         setattr(db_record, field, value)
     db.commit()
     db.refresh(db_record)
+    # Log activity
+    db.add(ActivityLog(
+        user_id=db_record.user_id,
+        action_type="record_updated",
+        entity_id=db_record.id,
+        description=f"Updated placement record for {db_record.role_applied}",
+    ))
+    db.commit()
     return get_placement_record(db, db_record.id)  # type: ignore[return-value]
 
 
@@ -141,5 +158,16 @@ def update_placement_record(
 
 def delete_placement_record(db: Session, db_record: PlacementRecord) -> None:
     """Hard-delete a placement record row (cascades to rounds)."""
+    user_id = db_record.user_id
+    record_id = db_record.id
+    role = db_record.role_applied
     db.delete(db_record)
+    db.commit()
+    # Log activity
+    db.add(ActivityLog(
+        user_id=user_id,
+        action_type="record_deleted",
+        entity_id=record_id,
+        description=f"Deleted placement record for {role}",
+    ))
     db.commit()

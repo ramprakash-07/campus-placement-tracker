@@ -17,6 +17,7 @@ import {
   BarChart3,
   User,
   Users,
+  HelpCircle,
   ChevronsLeft,
   ChevronsRight,
 } from "lucide-react";
@@ -28,6 +29,7 @@ const NAV_ITEMS = [
   { to: "/companies", label: "Companies",   icon: Building2 },
   { to: "/records",   label: "My Records",  icon: FileText },
   { to: "/analytics", label: "Analytics",   icon: BarChart3 },
+  { to: "/question-bank", label: "Questions", icon: HelpCircle },
   { to: "/profile",   label: "Profile",     icon: User },
 ];
 

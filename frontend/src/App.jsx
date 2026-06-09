@@ -13,6 +13,7 @@ import Records              from "./pages/Records";
 import RecordDetail         from "./pages/RecordDetail";
 import Profile              from "./pages/Profile";
 import Analytics            from "./pages/Analytics";
+import QuestionBank         from "./pages/QuestionBank";
 import CoordinatorDashboard from "./pages/coordinator/CoordinatorDashboard";
 import CoordinatorStudents  from "./pages/coordinator/CoordinatorStudents";
 import NotFound             from "./pages/NotFound";
@@ -56,6 +57,7 @@ export default function App() {
           <Route path="records"   element={<Records />} />
           <Route path="records/:id" element={<RecordDetail />} />
           <Route path="analytics" element={<Analytics />} />
+          <Route path="question-bank" element={<QuestionBank />} />
           <Route path="profile"   element={<Profile />} />
 
           {/* ---- Coordinator-only (nested under MainLayout) ---- */}

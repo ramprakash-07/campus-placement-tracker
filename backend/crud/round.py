@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 
 from models.placement_record import PlacementRecord
 from models.round import Round
+from models.activity_log import ActivityLog
 from schemas.round import RoundCreate, RoundUpdate
 
 
@@ -76,6 +77,16 @@ def create_round(
     db.add(round_obj)
     db.commit()
     db.refresh(round_obj)
+    # Log activity — find the user via parent record
+    parent = db.query(PlacementRecord).filter(PlacementRecord.id == round_obj.placement_record_id).first()
+    if parent:
+        db.add(ActivityLog(
+            user_id=parent.user_id,
+            action_type="round_added",
+            entity_id=round_obj.placement_record_id,
+            description=f"Added {round_obj.round_type} round (Round {round_obj.round_number})",
+        ))
+        db.commit()
     return round_obj
 
 

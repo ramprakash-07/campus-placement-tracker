@@ -26,6 +26,9 @@ from routers.users import router as users_router
 from routers.coordinator import router as coordinator_router
 from routers.admin import router as admin_router
 from routers.search import router as search_router
+from routers.bookmarks import router as bookmarks_router
+from routers.question_bank import router as question_bank_router
+from routers.activity import router as activity_router
 
 
 # ---------------------------------------------------------------------------
@@ -151,6 +154,9 @@ app.include_router(analytics_router)
 app.include_router(coordinator_router)
 app.include_router(admin_router)
 app.include_router(search_router)
+app.include_router(bookmarks_router)
+app.include_router(question_bank_router)
+app.include_router(activity_router)
 
 
 # ---------------------------------------------------------------------------

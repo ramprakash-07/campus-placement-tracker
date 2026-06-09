@@ -17,8 +17,11 @@ import {
   Globe,
   AlertCircle,
   RefreshCw,
+  Bookmark,
+  BookmarkCheck,
 } from "lucide-react";
 import { getCompanies } from "../services/companyService";
+import { toggleBookmark, getBookmarks } from "../services/bookmarkService";
 import AddCompanyModal from "../components/AddCompanyModal";
 import SkeletonCard from "../components/ui/SkeletonCard";
 import EmptyState from "../components/ui/EmptyState";
@@ -56,7 +59,40 @@ export default function Companies() {
   const [loading, setLoading]     = useState(true);
   const [error, setError]         = useState("");
   const [modalOpen, setModalOpen] = useState(false);
+  const [bookmarkedIds, setBookmarkedIds] = useState(new Set());
+  const [filterTab, setFilterTab] = useState("all"); // "all" | "bookmarked"
   const { addToast } = useToast();
+
+  // Fetch bookmarks on mount
+  useEffect(() => {
+    getBookmarks()
+      .then((data) => setBookmarkedIds(new Set(data.map((b) => b.id))))
+      .catch(() => {});
+  }, []);
+
+  const handleToggleBookmark = async (e, companyId) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Optimistic update
+    setBookmarkedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(companyId)) next.delete(companyId);
+      else next.add(companyId);
+      return next;
+    });
+    try {
+      await toggleBookmark(companyId);
+    } catch {
+      // Revert on error
+      setBookmarkedIds((prev) => {
+        const next = new Set(prev);
+        if (next.has(companyId)) next.delete(companyId);
+        else next.add(companyId);
+        return next;
+      });
+      addToast({ message: "Failed to update bookmark", type: "error" });
+    }
+  };
 
   // Pagination + search via URL search params
   const [searchParams, setSearchParams] = useSearchParams();
@@ -131,6 +167,31 @@ export default function Companies() {
         </button>
       </div>
 
+      {/* ── Filter tabs ──────────────────────────────────────────────── */}
+      <div className="flex items-center gap-2">
+        <button
+          onClick={() => setFilterTab("all")}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
+            filterTab === "all"
+              ? "bg-primary-600 text-white shadow-sm"
+              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+          }`}
+        >
+          All
+        </button>
+        <button
+          onClick={() => setFilterTab("bookmarked")}
+          className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
+            filterTab === "bookmarked"
+              ? "bg-primary-600 text-white shadow-sm"
+              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+          }`}
+        >
+          <BookmarkCheck size={14} />
+          Bookmarked
+        </button>
+      </div>
+
       {/* ── Search bar ───────────────────────────────────────────────── */}
       <div className="relative max-w-md">
         <Search
@@ -191,14 +252,27 @@ export default function Companies() {
       {!loading && !error && companies.length > 0 && (
         <>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {companies.map((company) => (
+            {companies
+              .filter((c) => filterTab === "all" || bookmarkedIds.has(c.id))
+              .map((company) => (
               <Link
                 key={company.id}
                 to={`/companies/${company.id}`}
                 className="group relative rounded-2xl border border-gray-200/60 bg-white p-5 shadow-sm hover:shadow-md hover:border-primary-200/60 transition-all duration-200 block"
               >
+                {/* Bookmark toggle */}
+                <button
+                  onClick={(e) => handleToggleBookmark(e, company.id)}
+                  className="absolute top-3 right-3 p-1.5 rounded-lg text-gray-300 hover:text-amber-500 transition-colors cursor-pointer z-10"
+                  title={bookmarkedIds.has(company.id) ? "Remove bookmark" : "Bookmark"}
+                >
+                  {bookmarkedIds.has(company.id)
+                    ? <BookmarkCheck size={18} className="text-amber-500 fill-amber-500" />
+                    : <Bookmark size={18} />}
+                </button>
+
                 {/* Header row */}
-                <div className="flex items-start gap-3">
+                <div className="flex items-start gap-3 pr-8">
                   <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-gradient-to-br from-primary-50 to-primary-100 group-hover:from-primary-100 group-hover:to-primary-200 transition-colors flex-shrink-0">
                     <Building2 size={20} className="text-primary-600" />
                   </div>
@@ -219,6 +293,7 @@ export default function Companies() {
                     target="_blank"
                     rel="noopener noreferrer"
                     className="mt-4 inline-flex items-center gap-1.5 text-sm text-primary-600 hover:text-primary-800 font-medium transition-colors group/link"
+                    onClick={(e) => e.stopPropagation()}
                   >
                     <Globe size={14} className="flex-shrink-0" />
                     <span className="truncate max-w-[200px] group-hover/link:underline">
