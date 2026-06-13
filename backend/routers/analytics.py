@@ -82,12 +82,19 @@ def get_summary(
     total_rounds = rounds_query.scalar() or 0
     selected_count = selected_query.scalar() or 0
 
-    selection_rate = round((selected_count / total_records) * 100, 2) if total_records else 0.0
+    # Average CTC
+    avg_ctc_query = db.query(func.avg(PlacementRecord.ctc_offered)).filter(
+        PlacementRecord.ctc_offered.isnot(None),
+    )
+    avg_ctc_query = _apply_filters(avg_ctc_query, current_user, academic_year)
+    avg_ctc = avg_ctc_query.scalar()
 
     return {
+        "total_records": total_records,
         "total_companies": total_companies,
         "total_rounds": total_rounds,
         "selection_rate": selection_rate,
+        "avg_ctc": round(float(avg_ctc), 2) if avg_ctc else 0.0,
         "scope": "platform" if is_coord else "personal",
     }
 
@@ -295,3 +302,37 @@ def get_my_round_performance(
         return _build_dropout_stats(db, academic_year=academic_year)
     else:
         return _build_dropout_stats(db, user_id=current_user.id, academic_year=academic_year)
+
+
+# ---------------------------------------------------------------------------
+# GET /analytics/records-by-year
+# ---------------------------------------------------------------------------
+@router.get("/records-by-year")
+def get_records_by_year(
+    academic_year: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Count of placement records grouped by academic year.
+    """
+    query = (
+        db.query(
+            PlacementRecord.academic_year.label("year"),
+            func.count(PlacementRecord.id).label("count"),
+        )
+    )
+    if not _is_coordinator(current_user):
+        query = query.filter(PlacementRecord.user_id == current_user.id)
+
+    rows = (
+        query
+        .group_by(PlacementRecord.academic_year)
+        .order_by(PlacementRecord.academic_year)
+        .all()
+    )
+
+    return [
+        {"year": row.year, "count": row.count}
+        for row in rows
+    ]

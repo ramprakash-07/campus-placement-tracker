@@ -102,6 +102,7 @@ export default function RecordDetail() {
   const [rounds, setRounds] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [notFound, setNotFound] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const { addToast } = useToast();
 
@@ -109,6 +110,7 @@ export default function RecordDetail() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     setError("");
+    setNotFound(false);
     try {
       const rec = await getRecord(id);
       setRecord(rec);
@@ -120,12 +122,16 @@ export default function RecordDetail() {
         setRounds(roundsData);
       }
     } catch (err) {
-      const msg =
-        err.response?.data?.detail ||
-        err.response?.data?.message ||
-        "Failed to load record details.";
-      setError(msg);
-      addToast({ message: msg, type: "error" });
+      if (err.response?.status === 404) {
+        setNotFound(true);
+      } else {
+        const msg =
+          err.response?.data?.detail ||
+          err.response?.data?.message ||
+          "Failed to load record details.";
+        setError(msg);
+        addToast({ message: msg, type: "error" });
+      }
     } finally {
       setLoading(false);
     }
@@ -187,6 +193,24 @@ export default function RecordDetail() {
           >
             <RefreshCw size={14} />
             Retry
+          </button>
+        </div>
+      )}
+
+      {/* ── Not found state ──────────────────────────────────────────── */}
+      {!loading && notFound && (
+        <div className="rounded-2xl border border-gray-200/60 bg-white p-8 shadow-sm text-center">
+          <AlertCircle size={40} className="mx-auto text-gray-300 mb-4" />
+          <h3 className="text-lg font-bold text-gray-900 mb-1">Record not found</h3>
+          <p className="text-sm text-gray-500 mb-4">
+            This placement record doesn't exist or has been deleted.
+          </p>
+          <button
+            onClick={() => navigate("/records")}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-primary-600 hover:bg-primary-700 transition-colors cursor-pointer"
+          >
+            <ArrowLeft size={16} />
+            Back to Records
           </button>
         </div>
       )}

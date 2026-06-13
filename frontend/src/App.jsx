@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
+import ErrorBoundary       from "./components/ErrorBoundary";
 import MainLayout           from "./components/layout/MainLayout";
 import ProtectedRoute       from "./components/ProtectedRoute";
 import CoordinatorRoute     from "./components/CoordinatorRoute";
@@ -37,39 +38,41 @@ import NotFound             from "./pages/NotFound";
 export default function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        {/* ---- Public (no sidebar) ---- */}
-        <Route path="/login"    element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
+      <ErrorBoundary>
+        <Routes>
+          {/* ---- Public (no sidebar) ---- */}
+          <Route path="/login"    element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
 
-        {/* ---- Authenticated (with MainLayout: Sidebar + TopNav) ---- */}
-        <Route
-          element={
-            <ProtectedRoute>
-              <MainLayout />
-            </ProtectedRoute>
-          }
-        >
-          <Route index            element={<Dashboard />} />
-          <Route path="companies" element={<Companies />} />
-          <Route path="companies/:id" element={<CompanyDetail />} />
-          <Route path="records"   element={<Records />} />
-          <Route path="records/:id" element={<RecordDetail />} />
-          <Route path="analytics" element={<Analytics />} />
-          <Route path="question-bank" element={<QuestionBank />} />
-          <Route path="profile"   element={<Profile />} />
+          {/* ---- Authenticated (with MainLayout: Sidebar + TopNav) ---- */}
+          <Route
+            element={
+              <ProtectedRoute>
+                <MainLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index            element={<Dashboard />} />
+            <Route path="companies" element={<Companies />} />
+            <Route path="companies/:id" element={<CompanyDetail />} />
+            <Route path="records"   element={<Records />} />
+            <Route path="records/:id" element={<RecordDetail />} />
+            <Route path="analytics" element={<Analytics />} />
+            <Route path="question-bank" element={<QuestionBank />} />
+            <Route path="profile"   element={<Profile />} />
 
-          {/* ---- Coordinator-only (nested under MainLayout) ---- */}
-          <Route element={<CoordinatorRoute />}>
-            <Route path="coordinator/dashboard" element={<CoordinatorDashboard />} />
-            <Route path="coordinator/students"  element={<CoordinatorStudents />} />
+            {/* ---- Coordinator-only (nested under MainLayout) ---- */}
+            <Route element={<CoordinatorRoute />}>
+              <Route path="coordinator/dashboard" element={<CoordinatorDashboard />} />
+              <Route path="coordinator/students"  element={<CoordinatorStudents />} />
+            </Route>
           </Route>
-        </Route>
 
-        {/* ---- Catch-all ---- */}
-        <Route path="*" element={<NotFound />} />
-      </Routes>
+          {/* ---- Catch-all ---- */}
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </ErrorBoundary>
     </BrowserRouter>
   );
 }

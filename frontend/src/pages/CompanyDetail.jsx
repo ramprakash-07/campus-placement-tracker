@@ -110,12 +110,14 @@ export default function CompanyDetail() {
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [notFound, setNotFound] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
 
   // ── Fetch data ──────────────────────────────────────────────────────
   const fetchData = useCallback(async () => {
     setLoading(true);
     setError("");
+    setNotFound(false);
     try {
       const [companyData, recordsData] = await Promise.all([
         getCompany(id),
@@ -124,12 +126,16 @@ export default function CompanyDetail() {
       setCompany(companyData);
       setRecords(recordsData);
     } catch (err) {
-      const msg =
-        err.response?.data?.detail ||
-        err.response?.data?.message ||
-        "Failed to load company details.";
-      setError(msg);
-      addToast({ message: msg, type: "error" });
+      if (err.response?.status === 404) {
+        setNotFound(true);
+      } else {
+        const msg =
+          err.response?.data?.detail ||
+          err.response?.data?.message ||
+          "Failed to load company details.";
+        setError(msg);
+        addToast({ message: msg, type: "error" });
+      }
     } finally {
       setLoading(false);
     }
@@ -187,11 +193,29 @@ export default function CompanyDetail() {
         </div>
       )}
 
+      {/* ── Not found state ────────────────────────────────────────── */}
+      {!loading && notFound && (
+        <div className="rounded-2xl border border-gray-200/60 bg-white p-8 shadow-sm text-center">
+          <AlertCircle size={40} className="mx-auto text-gray-300 mb-4" />
+          <h3 className="text-lg font-bold text-gray-900 mb-1">Company not found</h3>
+          <p className="text-sm text-gray-500 mb-4">
+            This company doesn't exist or has been removed.
+          </p>
+          <button
+            onClick={() => navigate("/companies")}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-primary-600 hover:bg-primary-700 transition-colors cursor-pointer"
+          >
+            <ArrowLeft size={16} />
+            Back to Companies
+          </button>
+        </div>
+      )}
+
       {/* ── Loading skeleton ─────────────────────────────────────────── */}
       {loading && <DetailSkeleton />}
 
       {/* ── Company header card ──────────────────────────────────────── */}
-      {!loading && !error && company && (
+      {!loading && !error && !notFound && company && (
         <>
           <div className="rounded-2xl border border-gray-200/60 bg-white p-6 shadow-sm">
             <div className="flex items-start gap-4">

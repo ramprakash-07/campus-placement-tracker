@@ -36,27 +36,30 @@ def upgrade() -> None:
     op.create_index(op.f('ix_bookmarks_user_id'), 'bookmarks', ['user_id'])
     op.create_index(op.f('ix_bookmarks_company_id'), 'bookmarks', ['company_id'])
 
-    # Create action_type enum
-    action_type = sa.Enum(
-        'record_added', 'round_added', 'record_updated', 'record_deleted',
-        name='action_type',
-    )
-    action_type.create(op.get_bind(), checkfirst=True)
+    # Create action_type enum (idempotent)
+    op.execute("""
+        DO $$ BEGIN
+            CREATE TYPE action_type AS ENUM (
+                'record_added', 'round_added', 'record_updated', 'record_deleted'
+            );
+        EXCEPTION
+            WHEN duplicate_object THEN null;
+        END $$;
+    """)
 
     # Activity logs table
-    op.create_table(
-        'activity_logs',
-        sa.Column('id', sa.Integer(), nullable=False),
-        sa.Column('user_id', sa.Integer(), nullable=False),
-        sa.Column('action_type', action_type, nullable=False),
-        sa.Column('entity_id', sa.Integer(), nullable=True),
-        sa.Column('description', sa.Text(), nullable=True),
-        sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.text('now()')),
-        sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),
-        sa.PrimaryKeyConstraint('id'),
-    )
-    op.create_index(op.f('ix_activity_logs_id'), 'activity_logs', ['id'])
-    op.create_index(op.f('ix_activity_logs_user_id'), 'activity_logs', ['user_id'])
+    op.execute("""
+        CREATE TABLE IF NOT EXISTS activity_logs (
+            id SERIAL PRIMARY KEY,
+            user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            action_type action_type NOT NULL,
+            entity_id INTEGER,
+            description TEXT,
+            created_at TIMESTAMP NOT NULL DEFAULT now()
+        );
+    """)
+    op.execute("CREATE INDEX IF NOT EXISTS ix_activity_logs_id ON activity_logs(id);")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_activity_logs_user_id ON activity_logs(user_id);")
 
 
 def downgrade() -> None:
