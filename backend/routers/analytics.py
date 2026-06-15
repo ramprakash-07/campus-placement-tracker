@@ -82,6 +82,8 @@ def get_summary(
     total_rounds = rounds_query.scalar() or 0
     selected_count = selected_query.scalar() or 0
 
+    selection_rate = round((selected_count / total_records) * 100, 2) if total_records else 0.0
+
     # Average CTC
     avg_ctc_query = db.query(func.avg(PlacementRecord.ctc_offered)).filter(
         PlacementRecord.ctc_offered.isnot(None),

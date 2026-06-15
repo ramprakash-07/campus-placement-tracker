@@ -288,18 +288,17 @@ export default function Companies() {
 
                 {/* Website link */}
                 {company.website && (
-                  <a
-                    href={company.website}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mt-4 inline-flex items-center gap-1.5 text-sm text-primary-600 hover:text-primary-800 font-medium transition-colors group/link"
-                    onClick={(e) => e.stopPropagation()}
+                  <span
+                    role="link"
+                    tabIndex={0}
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); window.open(company.website, "_blank", "noopener,noreferrer"); }}
+                    className="mt-4 inline-flex items-center gap-1.5 text-sm text-primary-600 hover:text-primary-800 font-medium transition-colors group/link cursor-pointer"
                   >
                     <Globe size={14} className="flex-shrink-0" />
                     <span className="truncate max-w-[200px] group-hover/link:underline">
                       {company.website.replace(/^https?:\/\//, "")}
                     </span>
-                  </a>
+                  </span>
                 )}
 
                 {/* Created date */}

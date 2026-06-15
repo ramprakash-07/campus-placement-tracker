@@ -70,12 +70,98 @@ async def lifespan(app: FastAPI):
 
 
 # ---------------------------------------------------------------------------
+# OpenAPI tag metadata for Swagger UI grouping
+# ---------------------------------------------------------------------------
+tags_metadata = [
+    {
+        "name": "Auth",
+        "description": "User registration, login, password reset, and token management.",
+    },
+    {
+        "name": "Users",
+        "description": "User profile management — view and update current user info.",
+    },
+    {
+        "name": "Companies",
+        "description": "CRUD operations for companies that visit campus for placement drives.",
+    },
+    {
+        "name": "Placement Records",
+        "description": "Track individual placement applications — create, read, update, delete records.",
+    },
+    {
+        "name": "Rounds",
+        "description": "Manage interview rounds within a placement record (aptitude, technical, HR, etc.).",
+    },
+    {
+        "name": "Analytics",
+        "description": "Aggregate statistics — summary KPIs, package analysis, dropout rates, records by year.",
+    },
+    {
+        "name": "Coordinator",
+        "description": "Coordinator-only endpoints for reviewing and managing student records.",
+    },
+    {
+        "name": "Admin",
+        "description": "Admin-only endpoints for user management and platform statistics.",
+    },
+    {
+        "name": "Search",
+        "description": "Global search across companies, records, and rounds.",
+    },
+    {
+        "name": "Bookmarks",
+        "description": "Bookmark/wishlist companies — toggle and list bookmarked companies.",
+    },
+    {
+        "name": "Question Bank",
+        "description": "Aggregated interview questions from all rounds (anonymized, no user info).",
+    },
+    {
+        "name": "Activity",
+        "description": "Activity feed — recent user actions (record/round CRUD) with timestamps.",
+    },
+]
+
+
+# ---------------------------------------------------------------------------
 # App instance
 # ---------------------------------------------------------------------------
 app = FastAPI(
     title="Campus Placement Tracker API",
-    description="Backend API for the Campus Placement Tracker application",
-    version="0.1.0",
+    description="""
+## Campus Placement Tracker — REST API
+
+A comprehensive platform for students to track campus placement drives,
+interview rounds, and outcomes.
+
+### Features
+- **Authentication** — JWT-based auth with registration, login, and password reset
+- **Companies** — Browse and manage companies visiting campus
+- **Placement Records** — Track applications with status, CTC, and academic year
+- **Interview Rounds** — Log each round (aptitude, technical, HR) with questions and outcomes
+- **Analytics** — KPI dashboards, package stats, dropout rates, and trends
+- **Bookmarks** — Wishlist companies for quick access
+- **Question Bank** — Community-contributed interview questions (anonymized)
+- **Activity Feed** — Timeline of recent actions
+- **Role-based Access** — Student, Coordinator, and Admin roles
+
+### Authentication
+All protected endpoints require a Bearer JWT token in the `Authorization` header:
+```
+Authorization: Bearer <access_token>
+```
+    """,
+    version="1.0.0",
+    contact={
+        "name": "Campus Placement Tracker Team",
+        "url": "https://github.com/ramprakash-07/campus-placement-tracker",
+    },
+    license_info={
+        "name": "MIT License",
+        "url": "https://opensource.org/licenses/MIT",
+    },
+    openapi_tags=tags_metadata,
     lifespan=lifespan,
 )
 
