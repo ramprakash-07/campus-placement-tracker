@@ -1,0 +1,26 @@
+services:
+  - type: web
+    name: campus-placement-tracker-api
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python alembic_run.py && uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: campus-placement-db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: FRONTEND_URL
+        value: https://your-frontend.vercel.app
+      - key: COORDINATOR_INVITE_CODE
+        value: secret123
+      - key: ADMIN_EMAIL
+        value: admin@campus.com
+      - key: ADMIN_PASSWORD
+        value: Admin@123
+
+databases:
+  - name: campus-placement-db
+    plan: free
+    databaseName: campus_placement_tracker
