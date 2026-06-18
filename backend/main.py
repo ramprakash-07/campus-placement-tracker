@@ -254,7 +254,7 @@ def root():
     return {"data": {"message": "Campus Placement Tracker API is running"}, "message": "success"}
 
 
-@app.get("/health")
+@app.api_route("/health", methods=["GET", "HEAD"])
 def health_check():
     """Health-check endpoint for uptime monitors."""
     return {"data": {"status": "ok"}, "message": "success"}
