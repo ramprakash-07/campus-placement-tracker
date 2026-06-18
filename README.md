@@ -1,5 +1,11 @@
 # 🎓 Campus Placement Tracker
 
+## 🔗 Live Demo
+
+🔗 **Live App**: [https://cpt-v1.vercel.app](https://cpt-v1.vercel.app)
+
+---
+
 A comprehensive full-stack web application for students and coordinators to track campus placement drives, manage interview rounds, and analyse placement outcomes.
 
 ---
@@ -15,7 +21,6 @@ A comprehensive full-stack web application for students and coordinators to trac
 - **Question Bank** — Community-contributed interview questions (anonymized)
 - **Analytics** — Package comparison, dropout rates, company frequency, placement trends
 - **Profile** — Update name, change password
-- **Dark Mode** — System-aware theme toggle
 
 ### For Coordinators
 - Everything students get, plus:
@@ -63,7 +68,7 @@ campus-placement-tracker/
 │   │   ├── components/         # Reusable UI components
 │   │   ├── pages/              # Route pages
 │   │   ├── services/           # API service functions
-│   │   ├── store/              # Context providers (Auth, Theme)
+│   │   ├── store/              # Context providers (Auth, Toast)
 │   │   └── App.jsx             # Root with routing
 │   ├── vercel.json             # Vercel SPA rewrite rules
 │   └── index.html              # Entry with SEO meta tags

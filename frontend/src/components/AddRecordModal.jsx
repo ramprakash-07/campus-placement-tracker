@@ -25,8 +25,9 @@ import {
 import { createRecord } from "../services/recordService";
 import { getCompanies } from "../services/companyService";
 import { addRecordSchema } from "../utils/validationSchemas";
+import { ACADEMIC_YEARS } from "../utils/constants";
 
-const ACADEMIC_YEARS = ["2022-23", "2023-24", "2024-25"];
+
 const STATUSES = ["pending", "selected", "rejected"];
 
 const STATUS_LABEL = {

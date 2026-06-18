@@ -50,6 +50,7 @@ import {
 } from "../services/analyticsService";
 import SkeletonCard from "../components/ui/SkeletonCard";
 import EmptyState from "../components/ui/EmptyState";
+import { ACADEMIC_YEAR_FILTER_OPTIONS } from "../utils/constants";
 
 /* ── Color palette ───────────────────────────────────────────────────── */
 const INDIGO = {
@@ -91,7 +92,7 @@ const ROUND_TYPE_LABELS = {
   coding: "Coding",
 };
 
-const ACADEMIC_YEARS = ["All", "2022-23", "2023-24", "2024-25"];
+const ACADEMIC_YEARS = ACADEMIC_YEAR_FILTER_OPTIONS;
 
 /* ── Skeleton loaders ────────────────────────────────────────────────── */
 
