@@ -1,12 +1,27 @@
 # 🎓 Campus Placement Tracker
 
-## 🔗 Live Demo
+> A full-stack web app where students log every company they face during campus placements — rounds attended, questions asked, outcomes. Built in 50 days, 50 commits.
 
-🔗 **Live App**: [https://cpt-v1.vercel.app](https://cpt-v1.vercel.app)
+🔗 **Live App:** [https://cpt-v1.vercel.app](https://cpt-v1.vercel.app)
+📚 **API Docs:** [https://campus-placement-tracker-ezdq.onrender.com/docs](https://campus-placement-tracker-ezdq.onrender.com/docs)
 
 ---
 
-A comprehensive full-stack web application for students and coordinators to track campus placement drives, manage interview rounds, and analyse placement outcomes.
+## 📸 Screenshots
+
+### Dashboard
+![Dashboard](screenshots/dashboard.png)
+
+### Placement Records
+![Records](screenshots/records.png)
+
+### Analytics
+![Analytics](screenshots/analytics.png)
+
+### Coordinator View
+![Coordinator](screenshots/coordinator.png)
+
+> To add screenshots: create a `screenshots/` folder in the repo root, add your images, and push to GitHub.
 
 ---
 
@@ -15,47 +30,36 @@ A comprehensive full-stack web application for students and coordinators to trac
 ### For Students
 - **Dashboard** — KPI cards (total records, selection rate, avg CTC, total rounds), records-by-year chart, recent activity feed
 - **Placement Records** — Create, view, update, delete placement applications with status tracking
-- **Interview Rounds** — Log each interview round (aptitude, technical, HR, coding, GD) with questions and outcomes
-- **Companies** — Browse companies visiting campus, view details and placement history
+- **Interview Rounds** — Log each round (aptitude, technical, HR, coding, GD) with questions and outcomes
+- **Companies** — Browse companies visiting campus, view placement history
 - **Bookmarks** — Wishlist companies for quick access
-- **Question Bank** — Community-contributed interview questions (anonymized)
-- **Analytics** — Package comparison, dropout rates, company frequency, placement trends
-- **Profile** — Update name, change password
+- **Question Bank** — Community-contributed interview questions (anonymized by default)
+- **Analytics** — Package comparison, dropout rates per round, company frequency, placement trends
+- **Profile** — Update name, change password, view personal summary
 
 ### For Coordinators
 - Everything students get, plus:
-- **Review Records** — Approve/reject student placement records
-- **Platform-wide Analytics** — See all students' data aggregated
-
-### For Admins
-- **User Management** — View all users, manage roles
-- **Platform Statistics** — Global overview of the platform
-
-### Technical Features
-- **JWT Authentication** — Secure token-based auth with password reset (OTP)
-- **Role-based Access Control** — Student, Coordinator, Admin roles
-- **Rate Limiting** — Slowapi-based rate limiting on sensitive endpoints
-- **Request Logging** — Timestamped rotating log files
-- **Error Boundaries** — Graceful React error handling with fallback UI
-- **Responsive Design** — Mobile-first with bottom nav, card stacks, full-screen modals
-- **Global Search** — Search across companies, records, and rounds
+- **Review Records** — Approve or reject student placement entries
+- **Student Management** — View all students, record counts, delete accounts
+- **Platform-wide Analytics** — All students' data aggregated, not just personal
 
 ---
 
 ## 🛠 Tech Stack
 
 | Layer | Technology |
-|-------|-----------|
-| **Frontend** | React 19, Vite, Tailwind CSS, React Router v6, React Hook Form + Zod |
-| **Charts** | Recharts |
-| **State** | React Query (TanStack), Context API |
-| **Icons** | Lucide React |
-| **Backend** | Python 3.11, FastAPI, SQLAlchemy ORM, Alembic |
-| **Database** | PostgreSQL |
-| **Auth** | JWT (PyJWT), bcrypt |
-| **Rate Limiting** | SlowAPI |
-| **Testing** | pytest, httpx, TestClient |
-| **Deployment** | Vercel (frontend), Render (backend + DB) |
+|---|---|
+| Frontend | React 19, Vite, Tailwind CSS, React Router v6 |
+| Forms | React Hook Form + Zod |
+| Charts | Recharts |
+| State | React Query (TanStack), Context API |
+| Icons | Lucide React |
+| Backend | Python 3.11, FastAPI, SQLAlchemy ORM, Alembic |
+| Database | PostgreSQL |
+| Auth | JWT (python-jose), bcrypt, passlib |
+| Rate Limiting | SlowAPI |
+| Testing | pytest, httpx, TestClient (43 tests) |
+| Deployment | Vercel (frontend) + Render (backend + DB) |
 
 ---
 
@@ -67,26 +71,24 @@ campus-placement-tracker/
 │   ├── src/
 │   │   ├── components/         # Reusable UI components
 │   │   ├── pages/              # Route pages
-│   │   ├── services/           # API service functions
-│   │   ├── store/              # Context providers (Auth, Toast)
-│   │   └── App.jsx             # Root with routing
-│   ├── vercel.json             # Vercel SPA rewrite rules
+│   │   ├── services/           # Axios API service functions
+│   │   ├── store/              # Auth + Toast context providers
+│   │   └── App.jsx             # Root with routing + guards
+│   ├── vercel.json             # SPA rewrite rules
 │   └── index.html              # Entry with SEO meta tags
 │
 ├── backend/                    # FastAPI REST API
-│   ├── routers/                # API route handlers
+│   ├── routers/                # Route handlers (12 groups)
 │   ├── models/                 # SQLAlchemy ORM models
-│   ├── schemas/                # Pydantic request/response schemas
-│   ├── core/                   # Config, security helpers
-│   ├── db/                     # Database engine & session
+│   ├── schemas/                # Pydantic v2 schemas
+│   ├── core/                   # Config, security, dependencies
+│   ├── db/                     # Engine + session factory
 │   ├── alembic/                # Database migrations
-│   ├── tests/                  # pytest test suite (43 tests)
-│   ├── main.py                 # FastAPI app entry point
-│   ├── init_db.py              # Admin user seed
+│   ├── tests/                  # pytest suite (43 tests)
+│   ├── main.py                 # App entry point
+│   ├── init_db.py              # Admin seed script
 │   ├── seed_data.py            # Demo data seed
-│   ├── alembic_run.py          # Deployment migration runner
-│   ├── render.yaml             # Render deployment config
-│   └── Procfile                # Alternative deployment
+│   └── alembic_run.py          # Deployment migration runner
 │
 ├── DEPLOYMENT.md               # Full deployment guide
 └── README.md                   # This file
@@ -97,23 +99,22 @@ campus-placement-tracker/
 ## 🚀 Local Setup
 
 ### Prerequisites
-- **Python 3.11+**
-- **Node.js 18+** and **npm**
-- **PostgreSQL 14+** (running locally)
+- Python 3.11+
+- Node.js 18+ and npm
+- PostgreSQL 14+ running locally
 
 ### Backend
-
 ```bash
 cd backend
 
-# Create and configure environment
+# Set up environment
 cp .env.example .env
-# Edit .env with your DATABASE_URL, SECRET_KEY, etc.
+# Fill in DATABASE_URL, SECRET_KEY, etc.
 
 # Install dependencies
 pip install -r requirements.txt
 
-# Run database migrations
+# Run migrations
 python -m alembic upgrade head
 
 # Seed admin user
@@ -122,12 +123,11 @@ python init_db.py
 # (Optional) Seed demo data
 python seed_data.py
 
-# Start the server
+# Start server
 uvicorn main:app --reload --port 8000
 ```
 
 ### Frontend
-
 ```bash
 cd frontend
 
@@ -138,7 +138,7 @@ npm install
 npm run dev
 ```
 
-The app will be available at **http://localhost:5173** with the API at **http://localhost:8000**.
+App runs at `http://localhost:5173` — API at `http://localhost:8000`.
 
 ---
 
@@ -146,37 +146,37 @@ The app will be available at **http://localhost:5173** with the API at **http://
 
 ### Backend (`backend/.env`)
 
-| Variable | Description | Required | Default |
-|----------|-------------|----------|---------|
-| `DATABASE_URL` | PostgreSQL connection string | ✅ | — |
-| `SECRET_KEY` | JWT signing secret | ✅ | — |
-| `ALGORITHM` | JWT algorithm | ❌ | `HS256` |
-| `ACCESS_TOKEN_EXPIRE_MINUTES` | Token lifetime | ❌ | `30` |
-| `FRONTEND_URL` | Frontend URL for CORS | ❌ | `http://localhost:5173` |
-| `COORDINATOR_INVITE_CODE` | Code for coordinator registration | ❌ | `""` |
-| `ADMIN_EMAIL` | Admin user email for seeding | ❌ | `""` |
-| `ADMIN_PASSWORD` | Admin user password for seeding | ❌ | `""` |
-| `SMTP_HOST` | SMTP server for password reset | ❌ | `smtp.gmail.com` |
-| `SMTP_PORT` | SMTP port | ❌ | `587` |
-| `SMTP_USER` | SMTP username | ❌ | `""` |
-| `SMTP_PASSWORD` | SMTP app password | ❌ | `""` |
+| Variable | Description | Required |
+|---|---|---|
+| `DATABASE_URL` | PostgreSQL connection string | ✅ |
+| `SECRET_KEY` | JWT signing secret (`openssl rand -hex 32`) | ✅ |
+| `ALGORITHM` | JWT algorithm | ❌ default: `HS256` |
+| `ACCESS_TOKEN_EXPIRE_MINUTES` | Token lifetime | ❌ default: `30` |
+| `FRONTEND_URL` | Frontend URL for CORS | ❌ default: `http://localhost:5173` |
+| `COORDINATOR_INVITE_CODE` | Secret code for coordinator registration | ❌ |
+| `ADMIN_EMAIL` | Admin seed email | ❌ |
+| `ADMIN_PASSWORD` | Admin seed password | ❌ |
+| `SMTP_HOST` | SMTP server | ❌ default: `smtp.gmail.com` |
+| `SMTP_PORT` | SMTP port | ❌ default: `587` |
+| `SMTP_USER` | SMTP username | ❌ |
+| `SMTP_PASSWORD` | Gmail App Password | ❌ |
 
-### Frontend
+### Frontend (`frontend/.env`)
 
 | Variable | Description |
-|----------|-------------|
-| `VITE_API_URL` | Backend API base URL (for production) |
+|---|---|
+| `VITE_API_BASE_URL` | Backend API base URL |
 
 ---
 
 ## 📚 API Documentation
 
-Once the backend is running, interactive API docs are available at:
+With the backend running locally:
 
-- **Swagger UI**: [http://localhost:8000/docs](http://localhost:8000/docs)
-- **ReDoc**: [http://localhost:8000/redoc](http://localhost:8000/redoc)
+- **Swagger UI:** http://localhost:8000/docs
+- **ReDoc:** http://localhost:8000/redoc
 
-The API is organized into 12 endpoint groups: Auth, Users, Companies, Placement Records, Rounds, Analytics, Coordinator, Admin, Search, Bookmarks, Question Bank, and Activity.
+12 endpoint groups: Auth, Users, Companies, Placement Records, Rounds, Analytics, Coordinator, Admin, Search, Bookmarks, Question Bank, Activity.
 
 ---
 
@@ -187,43 +187,33 @@ cd backend
 python -m pytest tests/ -v
 ```
 
-**43 test cases** covering:
-- Authentication (register, login, token validation)
-- Companies (CRUD, 404, unauthorized)
-- Placement Records (CRUD, ownership enforcement)
-- Analytics (summary shape, packages, records-by-year)
-
----
-
-## 🌐 Deployment
-
-See [DEPLOYMENT.md](./DEPLOYMENT.md) for the complete deployment guide covering:
-- Vercel frontend setup
-- Render backend + PostgreSQL setup
-- Environment variable configuration
-- Post-deployment checklist
-
----
-
-## 📸 Screenshots
-
-> Screenshots will be added here after deployment.
+43 test cases covering auth, companies CRUD, record ownership enforcement, and analytics response shapes.
 
 ---
 
 ## 👤 Demo Credentials
 
 | Role | Email | Password |
-|------|-------|----------|
-| **Admin** | `admin@campus.com` | `Admin@123` |
-| **Student** | `alice@campus.com` | `Student@123` |
-| **Student** | `bob@campus.com` | `Student@123` |
-| **Student** | `charlie@campus.com` | `Student@123` |
+|---|---|---|
+| Student | alice@campus.com | Student@123 |
+| Student | bob@campus.com | Student@123 |
 
-*Student accounts are created by running `python seed_data.py`.*
+> Run `python seed_data.py` in the backend to create these accounts.
+> Coordinator and Admin accounts are provisioned separately via invite code and `init_db.py`.
+
+---
+
+## 🌐 Deployment
+
+See [DEPLOYMENT.md](./DEPLOYMENT.md) for the complete guide covering Vercel + Render setup, environment variables, migration runner, and post-deploy checklist.
 
 ---
 
 ## 📄 License
 
-This project is licensed under the [MIT License](https://opensource.org/licenses/MIT).
+MIT License — free to use, fork, and build on.
+
+---
+
+> Built by [Ramprakash S](https://github.com/ramprakash-07) as a portfolio project during the 2025-26 placement season.
+> 50 days · 50 commits · 1 project I'll actually use.
