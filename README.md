@@ -18,10 +18,6 @@
 ### Analytics
 ![Analytics](screenshots/analytics.png)
 
-### Coordinator View
-![Coordinator](screenshots/coordinator.png)
-
-> To add screenshots: create a `screenshots/` folder in the repo root, add your images, and push to GitHub.
 
 ---
 
@@ -216,4 +212,4 @@ MIT License — free to use, fork, and build on.
 ---
 
 > Built by [Ramprakash S](https://github.com/ramprakash-07) as a portfolio project during the 2025-26 placement season.
-> 50 days · 50 commits · 1 project I'll actually use.
+> 1 project I'll actually use.
