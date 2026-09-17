@@ -29,6 +29,7 @@ from routers.search import router as search_router
 from routers.bookmarks import router as bookmarks_router
 from routers.question_bank import router as question_bank_router
 from routers.activity import router as activity_router
+from routers.public import router as public_router
 
 
 # ---------------------------------------------------------------------------
@@ -243,6 +244,7 @@ app.include_router(search_router)
 app.include_router(bookmarks_router)
 app.include_router(question_bank_router)
 app.include_router(activity_router)
+app.include_router(public_router)
 
 
 # ---------------------------------------------------------------------------

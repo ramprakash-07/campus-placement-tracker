@@ -170,7 +170,24 @@ export default function Login() {
             </button>
           </form>
 
-          <p className="mt-8 text-center text-sm text-gray-500">
+          {/* Guest mode divider + button */}
+          <div className="flex items-center gap-3 my-5">
+            <hr className="flex-1 border-gray-200" />
+            <span className="text-xs text-gray-400 font-medium">or</span>
+            <hr className="flex-1 border-gray-200" />
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              localStorage.setItem("isGuest", "true");
+              navigate("/guest/dashboard");
+            }}
+            className="flex w-full items-center justify-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-600 transition-all hover:bg-gray-50 hover:border-gray-400 hover:text-gray-800 active:scale-[0.98] cursor-pointer"
+          >
+            👀 Continue as Guest
+          </button>
+
+          <p className="mt-6 text-center text-sm text-gray-500">
             Don&apos;t have an account?{" "}
             <Link
               to="/register"
